@@ -2,11 +2,17 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from typing import Annotated, Dict, Any
-from env import HOST, PORT, TITLE, DESCRIPTION, VERSION, HOST, PORT, DEBUG
+from app.env import HOST, PORT, TITLE, DESCRIPTION, VERSION, HOST, PORT, DEBUG
 import uvicorn
 
 # Import routers
-from routers.v1.demo import demo_router
+from app.routers.v1.demo import demo_router
+
+# Import database initialization
+from app.models import create_tables
+
+# Create database tables if they don't exist
+create_tables()
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -39,4 +45,4 @@ def health_check() -> Dict[str, str]:
 
 # Run the application with uvicorn when this script is executed directly
 if __name__ == "__main__":
-    uvicorn.run("main:app", host=HOST, port=PORT, reload=DEBUG)
+    uvicorn.run("app.main:app", host=HOST, port=PORT, reload=DEBUG)
