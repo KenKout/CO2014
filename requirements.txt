@@ -1,0 +1,33 @@
+# API Libraries
+fastapi
+python-multipart  # For handling form data and file uploads
+
+# ASGI Server
+uvicorn
+
+# Environment Variables
+python-dotenv
+
+# Logging
+loguru
+
+# Encryption
+bcrypt
+passlib[bcrypt]
+
+# Database
+sqlalchemy
+pydantic
+pymysql
+alembic  # For database migrations
+sqlalchemy-utils  # Useful utilities for SQLAlchemy
+
+# JWT
+pyjwt
+email-validator  # For validating email addresses
+
+# Testing
+pytest
+pytest-asyncio
+pytest-cov  # For test coverage reporting
+httpx  # For testing API endpoints
