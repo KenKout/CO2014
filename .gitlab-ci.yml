@@ -1,0 +1,33 @@
+image: docker:latest
+
+services:
+  - name: docker:dind
+    alias: docker
+
+variables:
+  DOCKER_HOST: "tcp://docker:2376"
+  DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_DRIVER: overlay2  # Modern storage driver
+
+  # Docker Hub variables
+  DOCKER_REGISTRY: docker.io
+  DOCKER_NAMESPACE: $DOCKER_USERNAME
+  DOCKER_IMAGE_NAME: co2014
+  IMAGE_TAG: latest
+
+before_script:
+  - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
+  - export FULL_IMAGE_NAME=$DOCKER_REGISTRY/$DOCKER_NAMESPACE/$DOCKER_IMAGE_NAME
+
+build:
+  stage: build
+  script:
+    - |
+      echo "Building Docker images"
+      docker build \
+        -t $FULL_IMAGE_NAME:$CI_COMMIT_SHORT_SHA \
+        -t $FULL_IMAGE_NAME:latest .
+      
+      echo "Pushing images to registry"
+      docker push $FULL_IMAGE_NAME:$CI_COMMIT_SHORT_SHA
+      docker push $FULL_IMAGE_NAME:latest

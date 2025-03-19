@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # FastAPI application
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-mysql+pymysql://badminton_user:badminton_password@db/badminton_db}
+      - DEBUG=${DEBUG:-1}
+      - VERSION=${VERSION:-0.1.0}
+      - TITLE=${TITLE:-FastAPI App}
+      - DESCRIPTION=${DESCRIPTION:-API for FastAPI App}
+      - SECRET_KEY=${SECRET_KEY:-my_secret_key}
+      - ALGORITHM=${ALGORITHM:-HS256}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      - REFRESH_TOKEN_EXPIRE_MINUTES=${REFRESH_TOKEN_EXPIRE_MINUTES:-10080}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+    restart: unless-stopped
+    networks:
+      - badminton-network
+
+  # MySQL database
+  db:
+    image: mysql:8.0
+    # ports: # Uncomment this line to access MySQL from the host
+      # - "3306:3306" # Uncomment this line to access MySQL from the host
+    volumes:
+      - mysql_data:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-badminton_db}
+      - MYSQL_USER=${MYSQL_USER:-badminton_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-badminton_password}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_password}
+    restart: unless-stopped
+    networks:
+      - badminton-network
+    command: --default-authentication-plugin=mysql_native_password
+
+  # PHPMyAdmin for database management
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8080:80"
+    environment:
+      - PMA_ARBITRARY=1
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_password}
+    restart: unless-stopped
+    networks:
+      - badminton-network
+
+networks:
+  badminton-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
