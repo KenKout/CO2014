@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, Boolean, DateTime, ForeignKey, Enum,TIMESTAMP
+
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -10,10 +11,9 @@ class Booking(Base):
     BookingID = Column(Integer, primary_key=True)
     CustomerID = Column(Integer, ForeignKey("customer.CustomerID"))
     CourtID = Column(Integer, ForeignKey("court.Court_ID"))
-    Date = Column(DateTime)
-    StartTime = Column(DateTime)
-    Endtime = Column(DateTime)  # Note: This matches the case in the SQL dump
-    Status = Column(Boolean)
+    StartTime = Column(TIMESTAMP)
+    Endtime = Column(TIMESTAMP) 
+    Status = Column(Enum("Pending", "Confirmed", "Completed", "Cancelled"), nullable=False)
     TotalPrice = Column(Integer)
     OrderID = Column(Integer, ForeignKey("order.OrderID"))
 

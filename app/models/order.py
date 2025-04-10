@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, DateTime, ForeignKey , TIMESTAMP, Enum
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -9,11 +9,10 @@ class Order(Base):
 
     OrderID = Column(Integer, primary_key=True)
     PaymentID = Column(Integer)
-    OrderDate = Column(DateTime)
+    OrderDate = Column(TIMESTAMP)
     TotalAmount = Column(Integer)
     CustomerID = Column(Integer, ForeignKey("customer.CustomerID"))
     BookingID = Column(Integer)
-
     # Relationships
     customer = relationship("Customer", back_populates="orders")
     bookings = relationship("Booking", back_populates="order")

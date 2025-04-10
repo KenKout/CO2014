@@ -8,7 +8,7 @@ class Customer(Base):
     __tablename__ = "customer"
 
     CustomerID = Column(Integer, primary_key=True)
-    Name = Column(String(255))
+    Name = Column(String(70))
     JoinDate = Column(DateTime)
     UserID = Column(Integer, ForeignKey("user.UserID"))
 

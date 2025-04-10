@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Boolean, Enum
+from sqlalchemy import Column, Integer, Enum
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -8,8 +8,8 @@ class Court(Base):
     __tablename__ = "court"
 
     Court_ID = Column(Integer, primary_key=True)
-    Status = Column(Boolean)
-    HourRate = Column(Integer)
+    Status = Column(Enum("available", "unavailable"), nullable=False)
+    HourRate = Column(Integer, nullable=False)
     Type = Column(Enum("normal", "air-conditioner"))
 
     # Relationships

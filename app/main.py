@@ -6,8 +6,8 @@ from app.env import HOST, PORT, TITLE, DESCRIPTION, VERSION, HOST, PORT, DEBUG
 import uvicorn
 
 # Import routers
-from app.routers.v1.demo import demo_router
-
+# from app.routers.v1.demo import demo_router
+from app.routers.v2.booking import router
 # Import database initialization
 from app.models import create_tables
 
@@ -35,7 +35,8 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(demo_router, prefix="/v1")
+# app.include_router(demo_router, prefix="/v1")
+app.include_router(router, prefix="/v2")
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])

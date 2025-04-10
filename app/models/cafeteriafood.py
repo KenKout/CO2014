@@ -9,7 +9,7 @@ class CafeteriaFood(Base):
 
     FoodID = Column(Integer, primary_key=True)
     Stock = Column(Integer)
-    Name = Column(String(255))
+    Name = Column(String(100))
     Category = Column(Enum("drinks", "snacks", "meals"))
     Price = Column(Integer)
 

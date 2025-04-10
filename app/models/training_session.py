@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Enum, ForeignKey
+from sqlalchemy import Column, Integer, String, TIMESTAMP, Enum, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -8,8 +8,8 @@ class TrainingSession(Base):
     __tablename__ = "training_session"
 
     SessionID = Column(Integer, primary_key=True)
-    StartDate = Column(DateTime)
-    EndDate = Column(DateTime)
+    StartDate = Column(TIMESTAMP)
+    EndDate = Column(TIMESTAMP)
     CoachID = Column(Integer, ForeignKey("coach.StaffID"))
     CourtID = Column(Integer, ForeignKey("court.Court_ID"))
     CustomerID = Column(Integer, ForeignKey("customer.CustomerID"))

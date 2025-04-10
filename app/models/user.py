@@ -8,10 +8,10 @@ class User(Base):
     __tablename__ = "user"
 
     UserID = Column(Integer, primary_key=True)
-    Username = Column(String(255))
-    Password = Column(String(255))
-    Phone = Column(String(20))
-    UserType = Column(Enum("customer", "staff"))
+    Username = Column(String(50), unique=True, nullable=False)
+    Password = Column(String(50), nullable=False)
+    Phone = Column(String(10), nullable=False)
+    UserType = Column(Enum("customer", "staff"), nullable=False)
 
     # Relationships
     customers = relationship("Customer", back_populates="user")

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String,  ForeignKey, TIMESTAMP
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -10,8 +10,8 @@ class Staff(Base):
     StaffID = Column(Integer, primary_key=True)
     UserID = Column(Integer, ForeignKey("user.UserID"))
     Salary = Column(Integer)
-    HiredDate = Column(DateTime)
-    Name = Column(String(255))
+    HiredDate = Column(TIMESTAMP)
+    Name = Column(String(100))
 
     # Relationships
     user = relationship("User", back_populates="staff")

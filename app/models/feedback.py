@@ -9,6 +9,7 @@ class Feedback(Base):
 
     FeedbackID = Column(Integer, primary_key=True)
     CustomerID = Column(Integer, ForeignKey("customer.CustomerID"))
+    Title = Column(String(100), nullable=False)
     Content = Column(String(1000))
 
     # Relationships
