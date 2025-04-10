@@ -1,44 +1,45 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
+# File: app/routers/v2/booking.py
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 from sqlalchemy import text
 
-
 from app.database import get_db
 from pydantic import BaseModel, Field
+from enum import Enum
 
+# Enum for Status
+class BookingStatus(str, Enum):
+    Pending = "Pending"
+    Confirmed = "Confirmed"
+    Completed = "Completed"
+    Cancelled = "Cancelled"
 
 # Pydantic Schemas
 class BookingBase(BaseModel):
     CustomerID: int
     CourtID: int
-    Date: datetime
     StartTime: datetime
     Endtime: datetime
-    Status: bool
+    Status: BookingStatus
     TotalPrice: int
-    OrderID: Optional[int]
-
+    OrderID: Optional[int] = None
 
 class BookingCreate(BookingBase):
     pass
 
-
 class BookingUpdate(BaseModel):
     CustomerID: Optional[int]
     CourtID: Optional[int]
-    Date: Optional[datetime]
     StartTime: Optional[datetime]
     Endtime: Optional[datetime]
-    Status: Optional[bool]
+    Status: Optional[BookingStatus]
     TotalPrice: Optional[int]
     OrderID: Optional[int]
 
-
 class BookingOut(BookingBase):
     BookingID: int
-
 
 # FastAPI router
 router = APIRouter(
@@ -70,8 +71,8 @@ def get_booking(booking_id: int, db: Session = Depends(get_db)):
 @router.post("/", response_model=BookingOut, status_code=status.HTTP_201_CREATED)
 def create_booking(booking: BookingCreate, db: Session = Depends(get_db)):
     sql = """
-        INSERT INTO booking (CustomerID, CourtID, Date, StartTime, Endtime, Status, TotalPrice, OrderID)
-        VALUES (:CustomerID, :CourtID, :Date, :StartTime, :Endtime, :Status, :TotalPrice, :OrderID)
+        INSERT INTO booking (CustomerID, CourtID, StartTime, Endtime, Status, TotalPrice, OrderID)
+        VALUES (:CustomerID, :CourtID, :StartTime, :Endtime, :Status, :TotalPrice, :OrderID)
     """
     values = booking.dict()
     db.execute(text(sql), values)

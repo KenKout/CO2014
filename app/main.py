@@ -8,6 +8,7 @@ import uvicorn
 # Import routers
 # from app.routers.v1.demo import demo_router
 from app.routers.v2.booking import router
+from app.routers.v2.user import router_user
 # Import database initialization
 from app.models import create_tables
 
@@ -37,7 +38,7 @@ app.add_middleware(
 # Include routers
 # app.include_router(demo_router, prefix="/v1")
 app.include_router(router, prefix="/v2")
-
+app.include_router(router_user, prefix="/v2")
 # Health check endpoint
 @app.get("/health", tags=["Health"])
 def health_check() -> Dict[str, str]:
