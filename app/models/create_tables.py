@@ -5,7 +5,7 @@ def create_tables():
     Create all tables defined in the models if they don't exist.
     This function should be called during application startup.
     """
-    Base.metadata.drop_all(bind=engine)
+    # Base.metadata.drop_all(bind=engine)   #Only turn on if change the schema
     Base.metadata.create_all(bind=engine)
     print("Database tables created successfully.")
 

@@ -1,118 +1,59 @@
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy import text
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from app.database import get_db  # Assuming you have a dependency for getting DB session
-
+from app.database import get_db
+from app.models.user import User, UserTypeEnum # Import UserTypeEnum from models/user.py
 from pydantic import BaseModel
 from typing import Optional
-
+from enum import Enum
 
 class UserCreate(BaseModel):
     Username: str
     Password: str
     Phone: str
-    UserType: str  # "customer" or "staff"
-
+    UserType: UserTypeEnum  # Use UserTypeEnum
 
 class UserUpdate(BaseModel):
     Username: Optional[str] = None
     Password: Optional[str] = None
     Phone: Optional[str] = None
-    UserType: Optional[str] = None  # "customer" or "staff"
-
+    UserType: Optional[UserTypeEnum] = None  # Use Optional[UserTypeEnum]
 
 class UserResponse(BaseModel):
     UserID: int
     Username: str
     Phone: str
-    UserType: str  # "customer" or "staff"
+    UserType: UserTypeEnum  # Use UserTypeEnum
 
     class Config:
         orm_mode = True
 
 router_user = APIRouter(prefix="/user", tags=["User"])
 
-
 @router_user.post("/users/", response_model=UserResponse)
-def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    # Insert the user
-    query = text("""
-        INSERT INTO user (Username, Password, Phone, UserType)
-        VALUES (:Username, :Password, :Phone, :UserType)
-    """)
-    db.execute(query, {
-        "Username": user.Username,
-        "Password": user.Password,  # Make sure to hash the password before inserting
-        "Phone": user.Phone,
-        "UserType": user.UserType  # 'customer' or 'staff'
-    })
-    db.commit()
-    
-    # Now fetch the inserted user using the last inserted ID
-    query = text("""
-        SELECT UserID, Username, Phone, UserType
-        FROM user
-        WHERE UserID = LAST_INSERT_ID()
-    """)
-    result = db.execute(query).fetchone()
-
-    if result is None:
-        raise HTTPException(status_code=400, detail="User could not be created")
-    
-    return result
-
-
+async def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    return User.create_user(
+        db=db,
+        username=user.Username,
+        password=user.Password,
+        phone=user.Phone,
+        user_type=user.UserType
+    )
 @router_user.get("/users/{user_id}", response_model=UserResponse)
-def read_user(user_id: int, db: Session = Depends(get_db)):
-    query = text("""
-        SELECT UserID, Username, Phone, UserType
-        FROM user
-        WHERE UserID = :user_id
-    """)
-    result = db.execute(query, {"user_id": user_id}).fetchone()
+async def read_user(user_id: int, db: Session = Depends(get_db)):
+    return User.get_user_by_id(db=db, user_id=user_id)
 
-    if result is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    return result
+@router_user.delete("/users/{user_id}")
+async def delete_user(user_id: int, db: Session = Depends(get_db)):
+    return User.delete_user(db=db, user_id=user_id)
 
+@router_user.put("/users/{user_id}/change-password")
+async def change_password(user_id: int, new_password: str, db: Session = Depends(get_db)):
+    return User.change_password(db=db, user_id=user_id, new_password=new_password)
 
-# @router_user.put("/users/{user_id}", response_model=UserResponse)
-# def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db)):
-#     query = text( """
-#         UPDATE user
-#         SET 
-#             Username = COALESCE(:Username, Username),
-#             Password = COALESCE(:Password, Password),
-#             Phone = COALESCE(:Phone, Phone),
-#             UserType = COALESCE(:UserType, UserType)
-#         WHERE UserID = :user_id
-#     """)
-    
-#     result = db.execute(query, {
-#         "Username": user_update.Username,
-#         "Password": user_update.Password,  # Ensure password is hashed if updated
-#         "Phone": user_update.Phone,
-#         "UserType": user_update.UserType,
-#         "user_id": user_id
-#     }).fetchone()
+@router_user.get("/users/")
+async def get_all_users(db: Session = Depends(get_db)):
+    return User.get_all_users(db=db)
 
-#     if result is None:
-#         raise HTTPException(status_code=404, detail="User not found")
-    
-#     return result
-
-
-# @router_user.delete("/users/{user_id}")
-# def delete_user(user_id: int, db: Session = Depends(get_db)):
-#     query = text("""
-#         DELETE FROM user
-#         WHERE UserID = :user_id
-#         RETURNING UserID
-#     """)
-#     result = db.execute(query, {"user_id": user_id}).fetchone()
-    
-#     if result is None:
-#         raise HTTPException(status_code=404, detail="User not found")
-    
-#     return {"message": f"User {user_id} deleted successfully"}
+@router_user.post("/users/login")
+async def login_user(username: str, password: str, db: Session = Depends(get_db)):
+    return User.login_user(db=db, username=username, password=password)
