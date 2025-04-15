@@ -6,13 +6,7 @@ from app.env import HOST, PORT, TITLE, DESCRIPTION, VERSION, HOST, PORT, DEBUG
 import uvicorn
 
 # Import routers
-from app.routers.v1.demo import demo_router
-
-# Import database initialization
-from app.models import create_tables
-
-# Create database tables if they don't exist
-create_tables()
+from app.routers.v2.auths import router as router_auth
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -35,7 +29,9 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(demo_router, prefix="/v1")
+# app.include_router(demo_router, prefix="/v1")
+# app.include_router(router, prefix="/v2")
+app.include_router(router_auth, prefix="/v2")
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])

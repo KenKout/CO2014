@@ -9,6 +9,7 @@ class DemoItem(BaseModel):
     description: Optional[str] = None
     is_active: bool = True
     tags: List[str] = []
+    
 
     class Config:
         schema_extra = {
@@ -20,7 +21,7 @@ class DemoItem(BaseModel):
                 "tags": ["example", "demo"]
             }
         }
-
+    
 class DemoItemCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
