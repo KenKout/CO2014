@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import React from 'react';
 
 const ContentSection: React.FC = () => {
@@ -12,7 +13,9 @@ const ContentSection: React.FC = () => {
                     <h2 className="content-heading">Badminton program made for you<span className="period">.</span></h2>
                     <p className="content-description">Unlock your badminton potential with our tailored program designed just for you! Whether you're a beginner eager to learn the basics or a seasoned player aiming to sharpen your skills, our expert coaches and personalized training plans will guide you every step of the way.</p>
                     <div className="button-container">
-                        <button className="book-button">BOOK NOW</button>
+                        <Link href="/booking">
+                            <button className="book-button">BOOK NOW</button>
+                        </Link>
                     </div>
                 </div>
             </div>
