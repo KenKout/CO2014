@@ -1,39 +1,42 @@
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-
+import pymysql
+from pymysql.cursors import DictCursor
 from app.env import DATABASE_URL
 
-# Create SQLAlchemy engine
-engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True,  # Enables connection pool "pre-ping" feature
-    pool_recycle=3600,   # Recycle connections after 1 hour
-    echo=False           # Set to True to log all SQL queries
-)
+# Parse DATABASE_URL to extract connection parameters
+# Expected format: mysql+pymysql://user:password@host:port/dbname
+def parse_db_url(url):
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    return {
+        'host': parsed.hostname,
+        'port': parsed.port or 3306,
+        'user': parsed.username,
+        'password': parsed.password,
+        'db': parsed.path.lstrip('/'),
+        'charset': 'utf8mb4',
+        'cursorclass': DictCursor
+    }
 
-# Create session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+db_params = parse_db_url(DATABASE_URL)
 
-# Create base class for models
-Base = declarative_base()
-
-# Dependency to get DB session
+# Dependency to get DB connection
 def get_db():
     """
-    Dependency function to get a database session.
-    This function yields a database session and ensures it's closed after use.
+    Dependency function to get a database connection.
+    This function yields a database connection and ensures it's closed after use.
     
     Usage in FastAPI:
     ```
     @app.get("/items/")
-    def read_items(db: Session = Depends(get_db)):
-        items = db.query(Item).all()
+    def read_items(db = Depends(get_db)):
+        with db.cursor() as cursor:
+            cursor.execute("SELECT * FROM items")
+            items = cursor.fetchall()
         return items
     ```
     """
-    db = SessionLocal()
+    connection = pymysql.connect(**db_params)
     try:
-        yield db
+        yield connection
     finally:
-        db.close()
+        connection.close()
