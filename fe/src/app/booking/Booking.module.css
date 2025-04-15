@@ -1,0 +1,320 @@
+/* app/booking/Booking.module.css */
+.bookingPage {
+    font-family: 'Times New Roman', Times, serif;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    padding: 2rem 0;
+  }
+  
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+  
+  .pageTitle {
+    text-align: center;
+    color: #333;
+    margin-bottom: 2rem;
+    font-size: 2.5rem;
+  }
+  
+  @media (max-width: 768px) {
+    .container {
+      padding: 0 1rem;
+    }
+    
+    .pageTitle {
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+    }
+  }
+
+/* app/booking/components/Information.module.css */
+.infoSection {
+    background-color: white;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  }
+  
+  .sectionTitle {
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 0.5rem;
+  }
+  
+  .infoGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+  
+  .infoCard {
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #4caf50;
+  }
+  
+  .infoCard h3 {
+    color: #2c3e50;
+    margin-bottom: 0.75rem;
+    font-size: 1.2rem;
+  }
+  
+  .infoCard p {
+    margin-bottom: 0.5rem;
+    color: #555;
+  }
+  
+  .infoCard ul {
+    padding-left: 1.2rem;
+    margin-top: 0.5rem;
+  }
+  
+  .infoCard li {
+    margin-bottom: 0.25rem;
+    color: #555;
+  }
+  
+  .notice {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background-color: #fff8e1;
+    border-left: 4px solid #ffc107;
+    border-radius: 4px;
+  }
+  
+  .notice p {
+    margin: 0;
+    color: #5d4037;
+  }
+  
+  @media (max-width: 992px) {
+    .infoGrid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .infoGrid {
+      grid-template-columns: 1fr;
+    }
+    
+    .infoSection {
+      padding: 1.5rem;
+    }
+  }
+
+  /* app/booking/components/BookingForm.module.css */
+.bookingFormSection {
+    background-color: white;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  }
+  
+  .sectionTitle {
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 0.5rem;
+  }
+  
+  .formContainer {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .formGroup {
+    margin-bottom: 1.5rem;
+  }
+  
+  .formGroup label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #2c3e50;
+  }
+  
+  .formControl {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+  }
+  
+  .formControl:focus {
+    outline: none;
+    border-color: #4caf50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+  }
+  
+  .timeSelectionContainer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  
+  .durationInfo {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background-color: #e8f5e9;
+    border-radius: 6px;
+    border-left: 4px solid #4caf50;
+  }
+  
+  .durationInfo p {
+    margin: 0.5rem 0;
+    color: #2e7d32;
+  }
+  
+  @media (max-width: 768px) {
+    .timeSelectionContainer {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    
+    .bookingFormSection {
+      padding: 1.5rem;
+    }
+  }
+
+/* app/booking/components/Courts.module.css */
+.courtsSection {
+    background-color: white;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  }
+  
+  .sectionTitle {
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 0.5rem;
+  }
+  
+  .courtsGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+  
+  .courtCard {
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    background-color: #fff;
+  }
+  
+  .courtCard:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .courtCard.selected {
+    border-color: #4caf50;
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.2);
+  }
+  
+  /* Adjust court image dimensions for vertical display */
+  .courtImage {
+    height: 140px;
+    background-color: #f5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+  }
+  
+  .courtSvg {
+    max-height: 100%;
+    width: 100%;
+    object-fit: contain;
+  }
+  
+  .courtInfo {
+    padding: 1rem;
+  }
+  
+  .courtInfo h3 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    color: #2c3e50;
+  }
+  
+  .courtInfo ul {
+    padding-left: 1.2rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .courtInfo li {
+    margin-bottom: 0.25rem;
+    color: #555;
+  }
+  
+  .selectButton {
+    background-color: #f8f9fa;
+    padding: 0.75rem;
+    text-align: center;
+    font-weight: 500;
+    color: #555;
+    border-top: 1px solid #e0e0e0;
+    transition: all 0.2s;
+  }
+  
+  .selected .selectButton {
+    background-color: #4caf50;
+    color: white;
+  }
+  
+  .bookingAction {
+    margin-top: 2rem;
+    text-align: center;
+  }
+  
+  .bookNowButton {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    font-size: 1.1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-weight: 500;
+  }
+  
+  .bookNowButton:hover {
+    background-color: #388e3c;
+  }
+  
+  /* Update responsive design for smaller screens */
+  @media (max-width: 1200px) {
+    .courtsGrid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .courtsGrid {
+      grid-template-columns: 1fr;
+    }
+    
+    .courtsSection {
+      padding: 1.5rem;
+    }
+}
