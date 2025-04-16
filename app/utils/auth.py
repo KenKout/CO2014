@@ -58,3 +58,35 @@ def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+def get_current_admin(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    auth_token: HTTPAuthorizationCredentials = Depends(bearer_security),
+    db: pymysql.connections.Connection = Depends(get_db)
+):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    if auth_token is None:
+        raise credentials_exception
+        
+    token = auth_token.credentials
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+    except InvalidTokenError:
+        raise credentials_exception
+    
+    user = get_user_by_id(int(user_id), db)
+    if user is None or user['UserType'] != 'staff':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized as admin",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user
