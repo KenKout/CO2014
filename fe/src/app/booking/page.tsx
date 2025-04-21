@@ -5,6 +5,9 @@ import { useState } from 'react';
 import Information from './components/Information';
 import BookingForm from './components/BookingForm';
 import Courts from './components/Courts';
+import Equipments, { EquipmentItem } from './components/Equipments';
+import FoodAndDrink, { FoodDrinkItem } from './components/FoodAndDrink';
+import Total from './components/Total';
 import styles from './Booking.module.css';
 
 const Booking = () => {
@@ -15,6 +18,9 @@ const Booking = () => {
     duration: 0,
     selectedCourt: null
   });
+  
+  const [equipmentItems, setEquipmentItems] = useState<EquipmentItem[]>([]);
+  const [foodDrinkItems, setFoodDrinkItems] = useState<FoodDrinkItem[]>([]);
 
   const handleBookingChange = (data: any) => {
     setBookingData({
@@ -28,6 +34,14 @@ const Booking = () => {
       ...bookingData,
       selectedCourt: courtId
     });
+  };
+
+  const handleEquipmentChange = (items: EquipmentItem[]) => {
+    setEquipmentItems(items);
+  };
+
+  const handleFoodDrinkChange = (items: FoodDrinkItem[]) => {
+    setFoodDrinkItems(items);
   };
 
   return (
@@ -45,6 +59,20 @@ const Booking = () => {
         <Courts 
           selectedCourt={bookingData.selectedCourt}
           onCourtSelect={handleCourtSelect}
+        />
+        
+        <Equipments 
+          onEquipmentChange={handleEquipmentChange} 
+        />
+        
+        <FoodAndDrink 
+          onFoodDrinkChange={handleFoodDrinkChange} 
+        />
+        
+        <Total 
+          bookingData={bookingData}
+          equipmentItems={equipmentItems}
+          foodDrinkItems={foodDrinkItems}
         />
       </div>
     </div>

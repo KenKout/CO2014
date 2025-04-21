@@ -53,13 +53,6 @@ const Courts = ({ selectedCourt, onCourtSelect }: CourtsProps) => {
         ))}
       </div>
       
-      {selectedCourt && (
-        <div className={styles.bookingAction}>
-          <button className={styles.bookNowButton}>
-            Book Now
-          </button>
-        </div>
-      )}
     </section>
   );
 };
