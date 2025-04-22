@@ -6,6 +6,7 @@ interface Court {
   id: number;
   name: string;
   features: string[];
+  isPremium?: boolean; // <-- ADDED: Flag for premium courts
 }
 
 // Define props interface for the Courts component
@@ -15,14 +16,14 @@ interface CourtsProps {
 }
 
 const Courts = ({ selectedCourt, onCourtSelect }: CourtsProps) => {
-    const courts: Court[] = [
-        { id: 1, name: 'Court 1', features: ['Premium flooring', 'Tournament standard'] },
-        { id: 2, name: 'Court 2', features: ['Good for beginners', 'Natural lighting'] },
-        { id: 3, name: 'Court 3', features: ['Professional setup', 'Video recording available'] },
-        { id: 4, name: 'Court 4', features: ['Recently renovated', 'Air-conditioned'] },
-        { id: 5, name: 'Court 5', features: ['Corner location', 'Extra space around court'] },
-        { id: 6, name: 'Court 6', features: ['Specialized lighting', 'Premium shuttlecocks included'] },
-      ];
+  const courts: Court[] = [
+    { id: 1, name: 'Court 1', features: ['Premium flooring', 'Tournament standard'], isPremium: true },
+    { id: 2, name: 'Court 2', features: ['Good for beginners', 'Natural lighting'] },
+    { id: 3, name: 'Court 3', features: ['Professional setup', 'Video recording available'] },
+    { id: 4, name: 'Court 4', features: ['Recently renovated', 'Air-conditioned'], isPremium: true },
+    { id: 5, name: 'Court 5', features: ['Corner location', 'Extra space around court'] },
+    { id: 6, name: 'Court 6', features: ['Specialized lighting', 'Premium shuttlecocks included'] },
+  ];
   
   return (
     <section className={styles.courtsSection}>
@@ -30,16 +31,22 @@ const Courts = ({ selectedCourt, onCourtSelect }: CourtsProps) => {
       
       <div className={styles.courtsGrid}>
         {courts.map(court => (
-          <div 
-            key={court.id}
-            className={`${styles.courtCard} ${selectedCourt === court.id ? styles.selected : ''}`}
-            onClick={() => onCourtSelect(court.id)}
-          >
-            <div className={styles.courtImage}>
-              <BadmintonCourtSVG />
-            </div>
-            <div className={styles.courtInfo}>
-              <h3>{court.name}</h3>
+         <div 
+         key={court.id}
+         className={`${styles.courtCard} ${selectedCourt === court.id ? styles.selected : ''} ${court.isPremium ? styles.premium : ''}`} // <-- ADDED premium class
+         onClick={() => onCourtSelect(court.id)}
+       >
+       {/* --- MODIFICATION END --- */}
+         <div className={styles.courtImage}>
+           <BadmintonCourtSVG />
+         </div>
+         <div className={styles.courtInfo}>
+           {/* --- MODIFICATION START --- */}
+           {/* Add Premium Badge */}
+           <h3>
+             {court.name}
+             {court.isPremium && <span className={styles.premiumBadge}>Premium</span>} 
+           </h3>
               <ul>
                 {court.features.map((feature, index) => (
                   <li key={index}>{feature}</li>
