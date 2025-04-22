@@ -792,3 +792,289 @@
         font-size: 1.05rem;
     }
 }
+
+
+.modalOverlay {
+  position: fixed; /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgba(0, 0, 0, 0.6); /* Black w/ opacity */
+  z-index: 1000; /* Make sure it's above other content */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modalContent {
+  background-color: #ffffff;
+  margin: auto;
+  padding: 30px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px; /* Max width */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-align: left; /* Reset text alignment if needed */
+}
+
+.modalTitle {
+  text-align: center;
+  color: #28a745; /* Success color */
+  margin-top: 0;
+  margin-bottom: 25px;
+  font-size: 1.8rem;
+}
+
+.modalSection {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+.modalSection:last-of-type {
+  border-bottom: none;
+  margin-bottom: 25px; /* More space before button */
+}
+
+
+.modalSectionTitle {
+  font-size: 1.1rem;
+  color: #333;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.modalContent p,
+.modalContent li {
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 5px;
+  font-size: 0.95rem;
+}
+
+.modalContent strong {
+    color: #333;
+}
+
+.modalContent ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.modalSummaryItem {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.modalGrandTotal {
+    font-weight: bold;
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px dashed #ccc;
+    font-size: 1.05rem;
+    color: #000;
+}
+
+.modalHomeButton {
+  display: block;
+  width: 100%;
+  padding: 12px 20px;
+  background-color: var(--primary-color); /* Use your theme color */
+  color: #000;
+  border: var();
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  transition: background-color 0.2s ease;
+}
+
+.modalHomeButton:hover {
+  background-color: var(--primary-hover-color); /* Darker shade for hover */
+}
+
+/* Add Bank Transfer specific info styles if needed */
+.bankTransferInfo {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    border: 1px solid #dee2e6;
+    font-size: 0.9rem;
+}
+.bankTransferInfo p {
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+.bankTransferInfo strong {
+    display: block;
+    margin-bottom: 8px;
+    color: #333;
+}
+.bankTransferInfo em {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+
+
+.paymentMethodSelector {
+  margin-bottom: 1.5rem; /* Space below selector before form details */
+  border-bottom: 1px solid #eee; /* Separator line */
+  padding-bottom: 1.5rem;
+}
+
+.paymentMethodTitle {
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+/* Flex container for the radio button options */
+.paymentOptionsContainer {
+  display: flex;
+  flex-wrap: wrap; /* Allow options to wrap on smaller screens */
+  gap: 1rem; /* Space between options */
+}
+
+/* Styling for each payment method option (label wrapping the radio) */
+.paymentMethodOption {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem; /* Space between radio button, icon, and text */
+  padding: 0.8rem 1.2rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  background-color: #fff;
+  flex-grow: 1; /* Allow options to grow */
+  min-width: 150px; /* Minimum width for each option */
+}
+
+/* Hide the actual radio button visually */
+.paymentMethodOption input[type="radio"] {
+  appearance: none; /* Modern way */
+  -webkit-appearance: none; /* Legacy */
+  width: 0;
+  height: 0;
+  opacity: 0;
+  position: absolute; /* Take out of layout flow */
+}
+
+
+/* Style for the text part of the option */
+.paymentMethodOption span {
+  font-weight: 500;
+}
+
+/* Style for logos within the option */
+.paymentLogo {
+    height: 20px; /* Adjust size as needed */
+    width: auto;
+    object-fit: contain;
+}
+
+
+/* Styling for the selected option */
+.paymentMethodOption.selected {
+  border-color: #007bff;
+  background-color: #e7f3ff; /* Light blue background for selected */
+  box-shadow: 0 0 0 1px #007bff;
+}
+
+/* Hover effect for non-selected options */
+.paymentMethodOption:not(.selected):hover {
+  border-color: #999;
+  background-color: #f8f9fa;
+}
+
+/* Styling for informational text shown for digital wallets */
+.digitalWalletInfo {
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  margin-top: 1rem; /* Space above if card fields were visible */
+  text-align: center;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+/* Styling for the bank transfer details section */
+.bankTransferInfo {
+  padding: 1.2rem;
+  background-color: #f0f7fb; /* Slightly different background */
+  border: 1px solid #cce5ff;
+  border-radius: 5px;
+  margin-top: 1rem;
+}
+
+.bankTransferInfo h4 {
+  margin-top: 0;
+  margin-bottom: 0.8rem;
+  color: #004085; /* Darker blue for heading */
+}
+
+.bankDetailsList {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 1rem;
+}
+
+.bankDetailsList li {
+    margin-bottom: 0.6rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.bankDetailsList li strong {
+    display: inline-block;
+    min-width: 120px; /* Align text */
+    color: #333;
+}
+
+.bankTransferInfo .transferContent strong {
+    display: block; /* Make label full width */
+    margin-bottom: 0.3rem;
+}
+
+.bankTransferInfo .codeBlock {
+    background-color: #e9ecef;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-family: monospace;
+    margin-right: 0.5rem;
+    font-size: 1rem;
+    color: #495057;
+}
+
+.bankTransferInfo .copyButton {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    vertical-align: middle;
+}
+.bankTransferInfo .copyButton:hover {
+    background-color: #5a6268;
+}
+
+
+.bankTransferInfo .importantNote {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #555;
+  font-style: italic;
+}
