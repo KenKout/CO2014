@@ -3,23 +3,23 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.background import BackgroundTasks
 import jwt
 from jwt.exceptions import InvalidTokenError
-from passlib.context import CryptContext
+import bcrypt
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 import pymysql
 from app.database import get_db
-from app.models.user import get_user_by_username, get_user_by_id
+from app.models.user import get_user_by_username
+from app.models.enums import UserType
 from app.env import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
 # Security configurations
 bearer_security = HTTPBearer(auto_error=False)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 def get_password_hash(password):
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(10)).decode('utf-8')
 
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
@@ -48,13 +48,13 @@ def get_current_user(
     token = auth_token.credentials
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
-        if user_id is None:
+        username: str = payload.get("sub")
+        if username is None:
             raise credentials_exception
     except InvalidTokenError:
         raise credentials_exception
     
-    user = get_user_by_id(int(user_id), db)
+    user = get_user_by_username(username, db)
     if user is None:
         raise credentials_exception
     return user
@@ -76,14 +76,14 @@ def get_current_admin(
     token = auth_token.credentials
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
-        if user_id is None:
+        username: str = payload.get("sub")
+        if username is None:
             raise credentials_exception
     except InvalidTokenError:
         raise credentials_exception
     
-    user = get_user_by_id(int(user_id), db)
-    if user is None or user['UserType'] != 'staff':
+    user = get_user_by_username(username, db)
+    if user is None or user['UserType'] != UserType.STAFF.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized as admin",

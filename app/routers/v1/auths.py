@@ -10,10 +10,13 @@ from app.database import get_db
 from app.env import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
 router = APIRouter(
-    prefix="/user",
-    tags=["User Auth"],
+    prefix="/auth",
+    tags=["Auth"],
     responses={404: {"description": "Not found"}},
 )
+
+
+oauth2_scheme = None  # Not needed as it's handled in utils/auth.py
 
 # Pydantic models for request and response
 class Token(BaseModel):
@@ -24,10 +27,10 @@ class TokenData(BaseModel):
     username: Optional[str] = None
 
 class User(BaseModel):
-    user_id: int
     username: str
     phone: str
     user_type: str
+
 
 class RegisterRequest(BaseModel):
     username: str
@@ -45,6 +48,12 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
+class ForgotPasswordRequest(BaseModel):
+    username: str
+    phone: str
+
+# Helper functions are now in app/utils/auth.py
+
 # Routes
 @router.post("/login", response_model=Token)
 async def login(login_data: LoginRequest, db: pymysql.connections.Connection = Depends(get_db)):
@@ -56,14 +65,14 @@ async def login(login_data: LoginRequest, db: pymysql.connections.Connection = D
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(data={"sub": str(user['UserID'])}, expires_delta=access_token_expires)
+    access_token = create_access_token(data={"sub": user['Username']}, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/register")
 async def register(user: RegisterRequest, db: pymysql.connections.Connection = Depends(get_db)):
     hashed_password = get_password_hash(user.password)
-    return register_user(user.username, hashed_password, user.phone, "customer", user.name, db)
+    return register_user(user.username, hashed_password, user.phone, "Customer", user.name, db)
 
 @router.get("/profile", response_model=User)
 async def read_users_me(current_user: dict = Depends(get_current_user)):
-    return {"user_id": current_user['UserID'], "username": current_user['Username'], "phone": current_user['Phone'], "user_type": current_user['UserType']}
+    return {"username": current_user['Username'], "phone": current_user['Phone'], "user_type": current_user['UserType']}

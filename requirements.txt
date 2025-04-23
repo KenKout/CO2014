@@ -13,7 +13,6 @@ loguru
 
 # Encryption
 bcrypt
-passlib[bcrypt]
 cryptography
 
 # Database

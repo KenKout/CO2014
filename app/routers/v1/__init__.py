@@ -1,1 +1,0 @@
-# Make app/routers/v1 directory a Python package
