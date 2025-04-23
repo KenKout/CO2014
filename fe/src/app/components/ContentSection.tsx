@@ -14,8 +14,12 @@ const ContentSection: React.FC = () => {
                     <p className="content-description">Unlock your badminton potential with our tailored program designed just for you! Whether you're a beginner eager to learn the basics or a seasoned player aiming to sharpen your skills, our expert coaches and personalized training plans will guide you every step of the way.</p>
                     <div className="button-container">
                         <Link href="/booking">
-                            <button className="book-button">BOOK NOW</button>
+                            <button className="book-button">BOO NOW</button>
                         </Link>
+                        <Link href="/training-sessions"> {/* You might want to change this href */}
+                            <button className="book-button">TRAINING SESSION</button>
+                        </Link>
+         
                     </div>
                 </div>
             </div>

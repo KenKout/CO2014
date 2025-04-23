@@ -1078,3 +1078,168 @@
   color: #555;
   font-style: italic;
 }
+
+
+
+.modeSelector {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2.5rem;
+  gap: 1rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.modeButton {
+  padding: 0.8rem 1.8rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  border: 2px solid transparent;
+  background-color: #f0f0f0;
+  color: #555;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.modeButton:hover {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.modeButton.active {
+  background-color: #e8f5e9; /* Light green */
+  color: #2e7d32; /* Darker green */
+  border-color: #4caf50; /* Green border */
+  font-weight: 600;
+}
+
+/* Training Session Form Styles */
+.trainingSection {
+  background-color: white;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.trainingGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Responsive grid */
+  gap: 1.5rem;
+}
+
+.trainingCard {
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column; /* Stack info and button */
+}
+
+.trainingCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.trainingCard.selected {
+  border-color: #4caf50;
+  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.2);
+}
+
+.trainingInfo {
+  padding: 1.2rem;
+  flex-grow: 1; /* Allow info section to grow */
+}
+
+.trainingInfo h3 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  color: #2c3e50;
+  font-size: 1.3rem;
+}
+
+.trainingInfo p {
+  margin-bottom: 0.6rem;
+  color: #555;
+  line-height: 1.5;
+}
+
+.trainingDescription {
+  font-style: italic;
+  color: #666;
+  margin-top: 1rem;
+}
+
+.trainingPrice {
+  margin-top: 1rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #4CAF50; /* Match theme */
+  text-align: right;
+}
+
+/* Re-use selectButton styles from Courts */
+.trainingCard .selectButton {
+  background-color: #f8f9fa;
+  padding: 0.75rem;
+  text-align: center;
+  font-weight: 500;
+  color: #555;
+  border-top: 1px solid #e0e0e0;
+  transition: all 0.2s;
+  margin-top: auto; /* Push button to bottom */
+}
+
+.trainingCard.selected .selectButton {
+  background-color: #4caf50;
+  color: white;
+}
+
+.noSessions {
+    text-align: center;
+    color: #777;
+    padding: 2rem;
+    font-style: italic;
+}
+
+/* Ensure payButton styles exist or add them */
+.payButton {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(to right, #4caf50, #388e3c);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.15rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 1.5rem;
+    transition: all 0.3s ease;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+.payButton:hover:not(:disabled) {
+    background: linear-gradient(to right, #45a049, #2e7d32);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+.payButton:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+.paymentDisabledMessage {
+    text-align: center;
+    color: #dc3545; /* Red color for warnings */
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+
+
+
+
