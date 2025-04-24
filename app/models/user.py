@@ -1,11 +1,10 @@
 import pymysql
 from fastapi import HTTPException
-from passlib.context import CryptContext
 from app.database import get_db
 from datetime import datetime
 from app.models.enums import UserType
+from loguru import logger # Import loguru
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Database operations for User model using raw SQL
 def get_user_by_username(username: str, db: pymysql.connections.Connection):
@@ -46,3 +45,26 @@ def register_user(username: str, hashed_password: str, phone: str, user_type: st
     except pymysql.err.IntegrityError:
         db.rollback()
         raise HTTPException(status_code=400, detail="Username already registered")
+
+def get_customer_id_by_username(username: str, db: pymysql.connections.Connection) -> int:
+    """
+    Fetch the CustomerID for a given username. Raises HTTPException on error or if not found.
+    """
+    result = None # Initialize result to None
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("SELECT CustomerID FROM Customer WHERE Username = %s", (username,))
+            result = cursor.fetchone()
+    except pymysql.Error as db_err:
+        logger.error(f"Database error fetching customer ID for {username}: {db_err}")
+        raise HTTPException(status_code=500, detail="Database error")
+    except Exception as e:
+        logger.exception(f"Unexpected error fetching customer ID for {username}: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+    # Check if customer was found *after* the try-except block
+    if not result:
+        logger.warning(f"Customer not found for username: {username}")
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    return result['CustomerID']

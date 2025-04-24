@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 from typing import Optional
-from app.utils.auth import pwd_context, verify_password, get_password_hash, create_access_token, get_current_user
+from app.utils.auth import verify_password, get_password_hash, create_access_token, get_current_user
 from app.models.user import get_user_by_username, register_user
 from pydantic import BaseModel, validator
 import pymysql
@@ -48,11 +48,6 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
-class ForgotPasswordRequest(BaseModel):
-    username: str
-    phone: str
-
-# Helper functions are now in app/utils/auth.py
 
 # Routes
 @router.post("/login", response_model=Token)
