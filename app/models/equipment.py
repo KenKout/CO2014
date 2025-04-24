@@ -37,3 +37,202 @@ def get_all_equipment(db: pymysql.connections.Connection) -> List[Dict[str, Any]
     except Exception as e:
         logger.exception(f"Unexpected error fetching all equipment: {e}")
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+
+
+# --- Admin Specific Functions ---
+
+def create_equipment_admin(equipment_data, db: pymysql.connections.Connection) -> Dict[str, Any]:
+    """
+    Admin: Create a new equipment item.
+    equipment_data is an instance of AdminEquipmentCreateRequest Pydantic model.
+    Requires EquipmentID as it's the PK and not auto-incrementing.
+    """
+    # Check for EquipmentID conflict
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("SELECT EquipmentID FROM Equipment WHERE EquipmentID = %s", (equipment_data.EquipmentID,))
+            if cursor.fetchone():
+                raise HTTPException(status_code=409, detail=f"EquipmentID {equipment_data.EquipmentID} already exists.")
+
+            # Insert new equipment item
+            sql = """
+            INSERT INTO Equipment
+            (EquipmentID, Price, Type, Stock, Name, Brand, url)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+            # Convert HttpUrl to string for DB insertion
+            url_str = str(equipment_data.url) if equipment_data.url else None
+            params = (
+                equipment_data.EquipmentID,
+                equipment_data.Price,
+                equipment_data.Type.value,
+                equipment_data.Stock,
+                equipment_data.Name,
+                equipment_data.Brand,
+                url_str
+            )
+            cursor.execute(sql, params)
+            db.commit()
+            logger.info(f"Admin created Equipment ID: {equipment_data.EquipmentID}")
+            
+            # Fetch and return the created item details
+            return get_equipment_by_id_admin(equipment_data.EquipmentID, db)
+
+    except pymysql.err.IntegrityError as e:
+        db.rollback()
+        logger.error(f"Admin: IntegrityError creating equipment {equipment_data.EquipmentID}: {e}")
+        raise HTTPException(status_code=400, detail=f"Database integrity error: {e}")
+    except pymysql.Error as db_err:
+        db.rollback()
+        logger.error(f"Admin: Database error creating equipment {equipment_data.EquipmentID}: {db_err}")
+        raise HTTPException(status_code=500, detail="Database error during equipment creation")
+    except Exception as e:
+        db.rollback()
+        if isinstance(e, HTTPException): # Re-raise 409
+            raise e
+        logger.exception(f"Admin: Unexpected error creating equipment {equipment_data.EquipmentID}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during equipment creation")
+
+# Reusing get_all_equipment for admin, renaming for clarity in router
+def get_all_equipment_admin(db: pymysql.connections.Connection) -> List[Dict[str, Any]]:
+    """ Admin: Get all equipment items. """
+    logger.info("Admin fetching all equipment.")
+    return get_all_equipment(db) # Reuse the existing public function
+
+def get_equipment_by_id_admin(equipment_id: int, db: pymysql.connections.Connection) -> Dict[str, Any]:
+    """
+    Admin: Get a specific equipment item by EquipmentID.
+    Raises 404 if not found.
+    """
+    if equipment_id <= 0: # Basic check
+        logger.warning(f"Admin: Attempted to fetch equipment with invalid ID: {equipment_id}")
+        raise HTTPException(status_code=400, detail="Invalid Equipment ID provided.")
+
+    equipment_item = None
+    try:
+        with db.cursor() as cursor:
+            sql = "SELECT EquipmentID, Price, Type, Stock, Name, Brand, url FROM Equipment WHERE EquipmentID = %s"
+            cursor.execute(sql, (equipment_id,))
+            equipment_item = cursor.fetchone()
+    except pymysql.Error as db_err:
+        logger.error(f"Admin: Database error fetching equipment ID {equipment_id}: {db_err}")
+        raise HTTPException(status_code=500, detail="Database error")
+    except Exception as e:
+        logger.exception(f"Admin: Unexpected error fetching equipment ID {equipment_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+    if not equipment_item:
+        logger.warning(f"Admin: Equipment with ID {equipment_id} not found.")
+        raise HTTPException(status_code=404, detail=f"Equipment with ID {equipment_id} not found")
+
+    logger.info(f"Admin fetched details for equipment ID {equipment_id}.")
+    return equipment_item
+
+
+def update_equipment_admin(equipment_id: int, update_data, db: pymysql.connections.Connection) -> Dict[str, Any]:
+    """
+    Admin: Update details for a specific equipment item.
+    update_data is an instance of AdminEquipmentUpdateRequest.
+    Raises 404 if equipment item not found.
+    """
+    # Check if item exists first
+    try:
+        current_item = get_equipment_by_id_admin(equipment_id, db)
+    except HTTPException as e:
+        raise e # Re-raise 404
+
+    updates = []
+    params = []
+    update_dict = update_data.model_dump(exclude_unset=True)
+
+    field_map = {
+        "Name": "Name", "Type": "Type", "Brand": "Brand",
+        "Price": "Price", "Stock": "Stock", "url": "url"
+    }
+
+    for field, value in update_dict.items():
+        db_column = field_map.get(field)
+        if db_column:
+            if field == "Type" and value is not None:
+                    updates.append(f"{db_column} = %s")
+                    params.append(value.value) # Use enum value
+            elif field == "url" and value is not None:
+                    updates.append(f"{db_column} = %s")
+                    params.append(str(value)) # Convert HttpUrl to string
+            elif value is not None:
+                    updates.append(f"{db_column} = %s")
+                    params.append(value)
+
+    if not updates:
+        logger.info(f"Admin: No update data provided for equipment ID {equipment_id}.")
+        return current_item
+
+    params.append(equipment_id) # Add equipment_id for WHERE clause
+
+    try:
+        with db.cursor() as cursor:
+            sql = f"UPDATE Equipment SET {', '.join(updates)} WHERE EquipmentID = %s"
+            logger.debug(f"Admin: Executing Equipment update for ID {equipment_id}: {sql}")
+            cursor.execute(sql, tuple(params))
+
+            if cursor.rowcount == 0:
+                    logger.warning(f"Admin: Update for equipment ID {equipment_id} affected 0 rows.")
+                    db.rollback()
+                    return current_item
+
+            db.commit()
+            logger.info(f"Admin: Successfully updated equipment ID {equipment_id}.")
+            return get_equipment_by_id_admin(equipment_id, db) # Fetch and return updated
+
+    except pymysql.Error as db_err:
+        db.rollback()
+        logger.error(f"Admin: Database error updating equipment ID {equipment_id}: {db_err}")
+        raise HTTPException(status_code=500, detail="Database error during equipment update")
+    except Exception as e:
+        db.rollback()
+        logger.exception(f"Admin: Unexpected error updating equipment ID {equipment_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during equipment update")
+
+
+def delete_equipment_admin(equipment_id: int, db: pymysql.connections.Connection):
+    """
+    Admin: Delete an equipment item by EquipmentID.
+    Raises 404 if not found. Raises 409 if dependencies exist (Rent).
+    """
+    # Check if item exists first
+    try:
+        get_equipment_by_id_admin(equipment_id, db)
+    except HTTPException as e:
+        raise e # Re-raise 404
+
+    try:
+        with db.cursor() as cursor:
+            # Check for dependencies in Rent table
+            cursor.execute("SELECT OrderID FROM Rent WHERE EquipmentID = %s LIMIT 1", (equipment_id,))
+            if cursor.fetchone():
+                raise HTTPException(status_code=409, detail=f"Cannot delete equipment {equipment_id}: It exists in rent orders.")
+
+            # Proceed with deletion
+            sql = "DELETE FROM Equipment WHERE EquipmentID = %s"
+            logger.debug(f"Admin: Executing Equipment delete for ID {equipment_id}: {sql}")
+            cursor.execute(sql, (equipment_id,))
+
+            if cursor.rowcount == 0:
+                    logger.warning(f"Admin: Delete for equipment ID {equipment_id} affected 0 rows.")
+                    db.rollback()
+                    raise HTTPException(status_code=500, detail="Failed to delete equipment record.")
+
+            db.commit()
+            logger.info(f"Admin: Successfully deleted equipment ID {equipment_id}.")
+            # No body needed for 204 response
+
+    except pymysql.Error as db_err:
+        db.rollback()
+        logger.error(f"Admin: Database error deleting equipment ID {equipment_id}: {db_err}")
+        raise HTTPException(status_code=500, detail="Database error during equipment deletion")
+    except Exception as e:
+        db.rollback()
+        if isinstance(e, HTTPException): # Re-raise 409
+            raise e
+        logger.exception(f"Admin: Unexpected error deleting equipment ID {equipment_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during equipment deletion")

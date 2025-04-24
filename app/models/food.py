@@ -36,3 +36,201 @@ def get_all_food(db: pymysql.connections.Connection) -> List[Dict[str, Any]]:
     except Exception as e:
         logger.exception(f"Unexpected error fetching all food items: {e}")
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+
+
+# --- Admin Specific Functions ---
+
+def create_food_item_admin(food_data, db: pymysql.connections.Connection) -> Dict[str, Any]:
+    """
+    Admin: Create a new cafeteria food item.
+    food_data is an instance of AdminFoodCreateRequest Pydantic model.
+    Requires FoodID as it's the PK and not auto-incrementing.
+    """
+    # Check for FoodID conflict
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("SELECT FoodID FROM CafeteriaFood WHERE FoodID = %s", (food_data.FoodID,))
+            if cursor.fetchone():
+                raise HTTPException(status_code=409, detail=f"FoodID {food_data.FoodID} already exists.")
+
+            # Insert new food item
+            sql = """
+            INSERT INTO CafeteriaFood
+            (FoodID, Stock, Name, Category, Price, url)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            # Convert HttpUrl to string for DB insertion
+            url_str = str(food_data.url) if food_data.url else None
+            params = (
+                food_data.FoodID,
+                food_data.Stock,
+                food_data.Name,
+                food_data.Category.value,
+                food_data.Price,
+                url_str
+            )
+            cursor.execute(sql, params)
+            db.commit()
+            logger.info(f"Admin created Food Item ID: {food_data.FoodID}")
+            
+            # Fetch and return the created item details
+            return get_food_item_by_id_admin(food_data.FoodID, db)
+
+    except pymysql.err.IntegrityError as e:
+        db.rollback()
+        logger.error(f"Admin: IntegrityError creating food item {food_data.FoodID}: {e}")
+        raise HTTPException(status_code=400, detail=f"Database integrity error: {e}")
+    except pymysql.Error as db_err:
+        db.rollback()
+        logger.error(f"Admin: Database error creating food item {food_data.FoodID}: {db_err}")
+        raise HTTPException(status_code=500, detail="Database error during food item creation")
+    except Exception as e:
+        db.rollback()
+        if isinstance(e, HTTPException): # Re-raise 409
+            raise e
+        logger.exception(f"Admin: Unexpected error creating food item {food_data.FoodID}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during food item creation")
+
+# Reusing get_all_food for admin, renaming for clarity in router
+def get_all_food_items_admin(db: pymysql.connections.Connection) -> List[Dict[str, Any]]:
+    """ Admin: Get all food items. """
+    logger.info("Admin fetching all food items.")
+    return get_all_food(db) # Reuse the existing public function
+
+def get_food_item_by_id_admin(food_id: int, db: pymysql.connections.Connection) -> Dict[str, Any]:
+    """
+    Admin: Get a specific food item by FoodID.
+    Raises 404 if not found.
+    """
+    if food_id <= 0: # Basic check, adjust if FoodID can be non-positive
+        logger.warning(f"Admin: Attempted to fetch food item with invalid ID: {food_id}")
+        raise HTTPException(status_code=400, detail="Invalid Food ID provided.")
+
+    food_item = None
+    try:
+        with db.cursor() as cursor:
+            sql = "SELECT FoodID, Stock, Name, Category, Price, url FROM CafeteriaFood WHERE FoodID = %s"
+            cursor.execute(sql, (food_id,))
+            food_item = cursor.fetchone()
+    except pymysql.Error as db_err:
+        logger.error(f"Admin: Database error fetching food item ID {food_id}: {db_err}")
+        raise HTTPException(status_code=500, detail="Database error")
+    except Exception as e:
+        logger.exception(f"Admin: Unexpected error fetching food item ID {food_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+    if not food_item:
+        logger.warning(f"Admin: Food item with ID {food_id} not found.")
+        raise HTTPException(status_code=404, detail=f"Food item with ID {food_id} not found")
+
+    logger.info(f"Admin fetched details for food item ID {food_id}.")
+    return food_item
+
+
+def update_food_item_admin(food_id: int, update_data, db: pymysql.connections.Connection) -> Dict[str, Any]:
+    """
+    Admin: Update details for a specific food item.
+    update_data is an instance of AdminFoodUpdateRequest.
+    Raises 404 if food item not found.
+    """
+    # Check if item exists first
+    try:
+        current_item = get_food_item_by_id_admin(food_id, db)
+    except HTTPException as e:
+        raise e # Re-raise 404
+
+    updates = []
+    params = []
+    update_dict = update_data.model_dump(exclude_unset=True)
+
+    field_map = {
+        "Name": "Name", "Category": "Category", "Price": "Price",
+        "Stock": "Stock", "url": "url"
+    }
+
+    for field, value in update_dict.items():
+        db_column = field_map.get(field)
+        if db_column:
+            if field == "Category" and value is not None:
+                    updates.append(f"{db_column} = %s")
+                    params.append(value.value) # Use enum value
+            elif field == "url" and value is not None:
+                    updates.append(f"{db_column} = %s")
+                    params.append(str(value)) # Convert HttpUrl to string
+            elif value is not None:
+                    updates.append(f"{db_column} = %s")
+                    params.append(value)
+
+    if not updates:
+        logger.info(f"Admin: No update data provided for food item ID {food_id}.")
+        return current_item
+
+    params.append(food_id) # Add food_id for WHERE clause
+
+    try:
+        with db.cursor() as cursor:
+            sql = f"UPDATE CafeteriaFood SET {', '.join(updates)} WHERE FoodID = %s"
+            logger.debug(f"Admin: Executing Food update for ID {food_id}: {sql}")
+            cursor.execute(sql, tuple(params))
+
+            if cursor.rowcount == 0:
+                    logger.warning(f"Admin: Update for food item ID {food_id} affected 0 rows.")
+                    db.rollback()
+                    return current_item
+
+            db.commit()
+            logger.info(f"Admin: Successfully updated food item ID {food_id}.")
+            return get_food_item_by_id_admin(food_id, db) # Fetch and return updated
+
+    except pymysql.Error as db_err:
+        db.rollback()
+        logger.error(f"Admin: Database error updating food item ID {food_id}: {db_err}")
+        raise HTTPException(status_code=500, detail="Database error during food item update")
+    except Exception as e:
+        db.rollback()
+        logger.exception(f"Admin: Unexpected error updating food item ID {food_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during food item update")
+
+
+def delete_food_item_admin(food_id: int, db: pymysql.connections.Connection):
+    """
+    Admin: Delete a food item by FoodID.
+    Raises 404 if not found. Raises 409 if dependencies exist (OrderFood).
+    """
+    # Check if item exists first
+    try:
+        get_food_item_by_id_admin(food_id, db)
+    except HTTPException as e:
+        raise e # Re-raise 404
+
+    try:
+        with db.cursor() as cursor:
+            # Check for dependencies in OrderFood
+            cursor.execute("SELECT OrderID FROM OrderFood WHERE FoodID = %s LIMIT 1", (food_id,))
+            if cursor.fetchone():
+                raise HTTPException(status_code=409, detail=f"Cannot delete food item {food_id}: It exists in orders.")
+
+            # Proceed with deletion
+            sql = "DELETE FROM CafeteriaFood WHERE FoodID = %s"
+            logger.debug(f"Admin: Executing Food delete for ID {food_id}: {sql}")
+            cursor.execute(sql, (food_id,))
+
+            if cursor.rowcount == 0:
+                    logger.warning(f"Admin: Delete for food item ID {food_id} affected 0 rows.")
+                    db.rollback()
+                    raise HTTPException(status_code=500, detail="Failed to delete food item record.")
+
+            db.commit()
+            logger.info(f"Admin: Successfully deleted food item ID {food_id}.")
+            # No body needed for 204 response
+
+    except pymysql.Error as db_err:
+        db.rollback()
+        logger.error(f"Admin: Database error deleting food item ID {food_id}: {db_err}")
+        raise HTTPException(status_code=500, detail="Database error during food item deletion")
+    except Exception as e:
+        db.rollback()
+        if isinstance(e, HTTPException): # Re-raise 409
+            raise e
+        logger.exception(f"Admin: Unexpected error deleting food item ID {food_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during food item deletion")

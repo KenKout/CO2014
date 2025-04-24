@@ -15,6 +15,16 @@ from app.routers.v1.public.equipment import equipment_router
 from app.routers.v1.public.food import food_router
 from app.routers.v1.user.order import order_router as router_user_order # Import user order router
 from app.routers.v1.user.training_session import router as router_user_training_session # Import user training session router
+# Import admin routers
+from app.routers.v1.admin.user import admin_user_router
+from app.routers.v1.admin.staff import admin_staff_router
+from app.routers.v1.admin.coach import admin_coach_router
+from app.routers.v1.admin.training_session import admin_training_router # New
+from app.routers.v1.admin.booking import admin_booking_router # New
+from app.routers.v1.admin.food import admin_food_router # New
+from app.routers.v1.admin.equipment import admin_equipment_router # New
+from app.routers.v1.admin.enrollment import admin_enrollment_router # New
+from app.routers.v1.admin.feedback import admin_feedback_router # New
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -45,6 +55,16 @@ app.include_router(equipment_router, prefix="/v1/public")
 app.include_router(food_router, prefix="/v1/public")
 app.include_router(router_user_order, prefix="/v1/user", dependencies=[Depends(get_current_user)]) # Include user order router with auth dependency
 app.include_router(router_user_training_session, prefix="/v1/user", dependencies=[Depends(get_current_user)]) # Include user training session router with auth dependency
+# Include admin routers
+app.include_router(admin_user_router, prefix="/v1/admin")
+app.include_router(admin_staff_router, prefix="/v1/admin")
+app.include_router(admin_coach_router, prefix="/v1/admin")
+app.include_router(admin_training_router, prefix="/v1/admin") # New
+app.include_router(admin_booking_router, prefix="/v1/admin") # New
+app.include_router(admin_food_router, prefix="/v1/admin") # New
+app.include_router(admin_equipment_router, prefix="/v1/admin") # New
+app.include_router(admin_enrollment_router, prefix="/v1/admin") # New
+app.include_router(admin_feedback_router, prefix="/v1/admin") # New
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])

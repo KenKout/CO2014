@@ -26,6 +26,10 @@ class TrainingSessionType(str, Enum):
     INTERMEDIATE = "Intermediate"
     ADVANCED = "Advanced"
 
+class TrainingSessionStatus(str, Enum):
+    AVAILABLE = "Available"
+    UNAVAILABLE = "Unavailable"
+
 class FeedbackType(str, Enum):
     COURT = "Court"
     SESSION = "Session"
