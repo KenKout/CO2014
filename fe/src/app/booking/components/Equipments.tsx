@@ -1,4 +1,3 @@
-
 // app/booking/components/Equipments.tsx
 "use client";
 

@@ -1,9 +1,3 @@
-
-
-
-
-
-
 // app/booking/components/BookingForm.tsx
 "use client";
 

@@ -1,7 +1,3 @@
-
-
-
-
 // app/booking/page.tsx
 "use client";
 

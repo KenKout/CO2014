@@ -1,4 +1,4 @@
-import './styles.css'; // Import login-specific styles
+import styles from './Login.module.css'; // Adjusted import path for login styles
 import React from 'react';
 // import type { Metadata } from 'next'; // Removed Metadata import
 

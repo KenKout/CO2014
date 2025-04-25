@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import styles from '../Admin.module.css'; // Ensure this path is correct
+import styles from '../Admin.module.css';
 
 interface Staff {
     staff_id: number;

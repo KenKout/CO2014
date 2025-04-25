@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import styles from '../Admin.module.css'; // Ensure this path is correct
+import styles from '../Admin.module.css';
 
 interface Booking {
     booking_id: number;
@@ -46,7 +46,6 @@ const BookingList: React.FC = () => {
             // } finally {
             //     setLoading(false);
             // }
-
             // Simulate network delay
             setTimeout(() => {
                 setBookings(mockBookingData);

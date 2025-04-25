@@ -1,8 +1,10 @@
 'use client'; // Mark this component as a Client Component
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { createApiClient, API_BASE_URL } from '@/utils/api';
 import Link from 'next/link';
-import styles from './page.module.css';
+import styles from './Login.module.css';
 
 export default function LoginPage() {
   // State for toggling between Login and Signup
@@ -69,18 +71,29 @@ export default function LoginPage() {
   };
 
   // Login Form Submission
-  const handleLoginSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     clearAlerts();
-    console.log('Login attempt:', { email: loginEmail, password: loginPassword, remember: rememberMe });
-    // TODO: Implement actual login logic (API call)
-    setLoginAlert({ message: 'Login functionality would be implemented on the server side.', type: 'success', visible: true });
-    // On success: redirect or update UI state
-    // On failure: setLoginAlert({ message: 'Invalid credentials.', type: 'error', visible: true });
+    try {
+      const apiClient = createApiClient();
+      const response = await apiClient.post('/auth/login', { username: loginEmail, password: loginPassword });
+      if (response.ok) {
+        const data = await response.json();
+        const { login } = useAuth();
+        login(data.access_token);
+        setLoginAlert({ message: 'Login successful!', type: 'success', visible: true });
+      } else {
+        const errorData = await response.json();
+        setLoginAlert({ message: errorData.detail || 'Login failed.', type: 'error', visible: true });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setLoginAlert({ message: 'An error occurred during login.', type: 'error', visible: true });
+    }
   };
 
   // Signup Form Submission
-  const handleSignupSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSignupSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     clearAlerts();
 
@@ -101,23 +114,35 @@ export default function LoginPage() {
       return;
     }
 
-    console.log('Sign up attempt:', { fullname: signupFullname, email: signupEmail, password: signupPassword, agreeTerms });
-    // TODO: Implement actual signup logic (API call)
-    setSignupAlert({ message: 'Registration successful! You can now log in.', type: 'success', visible: true });
+    try {
+      const apiClient = createApiClient();
+      const response = await apiClient.post('/auth/register', {
+        username: signupEmail,
+        password: signupPassword,
+        phone: '', // You might want to add a phone field to the form if required by backend
+        name: signupFullname,
+      });
+      if (response.ok) {
+        setSignupAlert({ message: 'Registration successful! You can now log in.', type: 'success', visible: true });
+        setSignupFullname('');
+        setSignupEmail('');
+        setSignupPassword('');
+        setConfirmPassword('');
+        setAgreeTerms(false);
+        setPasswordStrength({ score: 0, text: 'Password strength' });
 
-    // Reset form or switch to login
-    // e.target.reset(); // Not directly applicable in React like this
-    setSignupFullname('');
-    setSignupEmail('');
-    setSignupPassword('');
-    setConfirmPassword('');
-    setAgreeTerms(false);
-    setPasswordStrength({ score: 0, text: 'Password strength' });
-
-    setTimeout(() => {
-        setIsSignupVisible(false);
-        clearAlerts();
-    }, 3000);
+        setTimeout(() => {
+          setIsSignupVisible(false);
+          clearAlerts();
+        }, 3000);
+      } else {
+        const errorData = await response.json();
+        setSignupAlert({ message: errorData.detail || 'Registration failed.', type: 'error', visible: true });
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+      setSignupAlert({ message: 'An error occurred during registration.', type: 'error', visible: true });
+    }
   };
 
   // Social Login/Signup Handlers (Placeholders)

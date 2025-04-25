@@ -1,11 +1,6 @@
-
-
-
-
-
 // app/booking/components/ConfirmationModal.tsx
 import React from 'react';
-import styles from '../Booking.module.css'; // Use the same CSS module
+import styles from '../Booking.module.css';
 // Removed Link import as it wasn't used in the provided snippet, can be added back if needed
 
 // Define possible booking modes
