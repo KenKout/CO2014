@@ -1,84 +1,128 @@
 /* app/profile/Profile.module.css */
 
-.profileContainer {
-    padding: 20px;
-    max-width: 800px;
-    margin: 20px auto;
+.profilePage {
+    font-family: 'Times New Roman', Times, serif;
+    background-color: #f8f9fa; /* Updated to match booking module */
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.pageTitle {
+    text-align: center;
+    color: #2c3e50; /* Updated to match booking module */
+    margin-bottom: 2rem;
+    font-size: 2.5rem;
+}
+
+.profileDetails {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); /* Updated to match booking module */
 }
 
-.profileContainer h1 {
-    color: #333;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
-    margin-bottom: 15px;
+.profileHeader {
+    text-align: center;
+    margin-bottom: 2rem;
 }
 
-.profileContainer h2 {
-    color: #555;
-    margin-top: 30px;
-    margin-bottom: 15px;
+.profileHeader h2 {
+    color: #2c3e50; /* Updated to match booking module */
+    margin-bottom: 0.5rem;
 }
 
-.profileContainer p {
-    color: #666;
+.profileHeader p {
+    color: #555; /* Updated to match booking module */
+}
+
+.profileBody {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+}
+
+.profileSection {
+    margin-bottom: 1.5rem;
+}
+
+.profileSection h3 {
+    color: #2c3e50; /* Updated to match booking module */
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    border-bottom: 2px solid #f0f0f0; /* Updated to match booking module */
+    padding-bottom: 0.5rem;
+}
+
+.profileSection p {
+    color: #555; /* Updated to match booking module */
     line-height: 1.6;
-    margin-bottom: 10px;
+    margin-bottom: 0.5rem;
 }
 
-.bookingsSection {
-    margin-top: 20px;
+.profileSection p strong {
+    color: #2c3e50; /* Updated to match booking module */
 }
 
-.bookingList {
-    list-style: none;
-    padding: 0;
+.editButton, .logoutButton {
+    background-color: #4CAF50; /* Updated to match booking module */
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-weight: 500;
+    margin-right: 0.5rem;
+    margin-top: 0.5rem;
 }
 
-.bookingItem {
-    background-color: #f9f9f9;
-    border: 1px solid #e0e0e0;
-    border-radius: 5px;
-    padding: 15px;
-    margin-bottom: 15px;
+.editButton:hover, .logoutButton:hover {
+    background-color: #388e3c; /* Updated to match booking module */
 }
 
-.bookingItem p {
-    margin: 5px 0;
+.logoutButton {
+    background-color: #dc3545; /* Different color for logout */
 }
 
-.bookingItem strong {
-    color: #444;
+.logoutButton:hover {
+    background-color: #c82333; /* Darker red on hover */
 }
 
-/* Status-specific styling */
-.statusConfirmed {
-    color: green;
-    font-weight: bold;
-}
-
-.statusPending {
-    color: orange;
-    font-weight: bold;
-}
-
-.statusCancelled {
-    color: red;
-    font-weight: bold;
-    text-decoration: line-through;
-}
-
-
-.message {
+.loading, .error {
     text-align: center;
     padding: 40px 20px;
     font-size: 1.2rem;
-    color: #666;
+    color: #555; /* Updated to match booking module */
 }
 
 .error {
-    color: red;
+    color: #dc3545; /* Updated to match booking module */
     font-weight: bold;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .container {
+        padding: 0 1rem;
+    }
+    
+    .pageTitle {
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .profileDetails {
+        padding: 1.5rem;
+    }
+    
+    .profileBody {
+        gap: 1.5rem;
+    }
 }
