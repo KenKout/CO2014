@@ -16,6 +16,7 @@ const ContentSection: React.FC = () => {
                         <Link href="/booking">
                             <button className="book-button">BOOK NOW</button>
                         </Link>
+
                     </div>
                 </div>
             </div>

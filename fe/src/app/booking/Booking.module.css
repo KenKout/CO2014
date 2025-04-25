@@ -318,3 +318,928 @@
       padding: 1.5rem;
     }
 }
+
+/* Equipment and Food/Drink sections */
+.equipmentSection,
+.foodDrinkSection,
+.totalSection {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 30px;
+}
+
+.equipmentContainer,
+.foodDrinkContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.equipmentItem,
+.foodDrinkItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+}
+
+.equipmentInfo,
+.itemInfo {
+  flex: 1;
+}
+
+.equipmentInfo h3,
+.itemInfo h4 {
+  margin: 0 0 5px 0;
+  font-size: 1rem;
+}
+
+.price {
+  color: #000;
+  font-weight: 600;
+  margin: 0;
+}
+
+.quantityControl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.quantityButton {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background-color: #4CAF50;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quantityButton:hover {
+  background-color: #45a049;
+}
+
+.quantity {
+  font-weight: bold;
+  min-width: 20px;
+  text-align: center;
+}
+
+.categoryContainer {
+  margin-bottom: 20px;
+}
+
+.categoryTitle {
+  font-size: 1.1rem;
+  margin-bottom: 10px;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+}
+
+.itemsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+/* Total section */
+.totalContainer {
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 6px;
+}
+
+.summaryItem {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.grandTotal {
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: #4CAF50;
+  border-bottom: none;
+  margin-top: 15px;
+}
+
+.checkoutButton {
+  width: 100%;
+  padding: 12px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: background-color 0.3s;
+}
+
+.checkoutButton:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+.checkoutButton:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+
+
+.courtCard.premium {
+  border-color: #FFD700; /* Gold border */
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); /* Subtle gold glow */
+}
+
+/* Style for the premium badge next to the court name */
+.premiumBadge {
+  display: inline-block;
+  background-color: #FFD700; /* Gold background */
+  color: #333; /* Dark text for contrast */
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75em; /* Smaller font size */
+  font-weight: bold;
+  margin-left: 8px; /* Space from court name */
+  vertical-align: middle; /* Align nicely with text */
+}
+
+/* Optional: Adjust selected premium court style */
+.courtCard.premium.selected {
+  border-color: #FFBF00; /* Darker gold when selected */
+  box-shadow: 0 0 15px rgba(255, 191, 0, 0.7);
+}
+
+/* Optional: Ensure selected style still overrides non-premium border */
+.courtCard.selected {
+    border-color: #4caf50; /* Keep green border for selected non-premium */
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.2);
+}
+
+
+.price {
+  color: #000;
+  font-weight: 600;
+  margin: 0;
+  /* Add '::after' if you want to automatically add VND via CSS, 
+     but doing it in the component JSX is generally better for clarity */
+  /* Example: content: " VND"; */ 
+}
+
+/* Update total section if needed (likely just component changes suffice) */
+.grandTotal {
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: #4CAF50; 
+  /* Ensure enough space if numbers become longer */
+}
+
+
+
+
+.equipmentSection,
+.foodDrinkSection,
+.totalSection {
+  background: linear-gradient(to bottom right, #ffffff, #f8f9fa); /* Subtle gradient */
+  border-radius: 12px; /* Slightly more rounded */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Softer shadow */
+  padding: 1.5rem 2rem; /* Adjust padding */
+  margin-bottom: 2.5rem; /* Increase spacing */
+  border-left: 5px solid #4CAF50; /* Accent border */
+}
+
+/* Section Title Enhancements */
+.equipmentSection .sectionTitle,
+.foodDrinkSection .sectionTitle,
+.totalSection .sectionTitle {
+  color: #333;
+  font-size: 1.6rem; /* Slightly smaller */
+  font-weight: 600; /* Bolder */
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 2px solid #e0e0e0; /* Lighter border */
+  position: relative;
+}
+/* Optional: Title underline effect */
+.equipmentSection .sectionTitle::after,
+.foodDrinkSection .sectionTitle::after,
+.totalSection .sectionTitle::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -2px; /* Position right over the border */
+    width: 60px; /* Width of the underline accent */
+    height: 2px;
+    background-color: #4CAF50; /* Match accent color */
+}
+
+
+/* Item Container Styling */
+.equipmentContainer,
+.foodDrinkContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem; /* Space between items */
+}
+
+/* Individual Item Styling (Equipment & Food/Drink) */
+.equipmentItem,
+.foodDrinkItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.2rem;
+  border-radius: 8px;
+  background-color: #fff;
+  border: 1px solid #e9ecef; /* Subtle border */
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+
+.equipmentItem:hover,
+.foodDrinkItem:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+}
+
+.equipmentInfo,
+.itemInfo {
+  flex: 1;
+  margin-right: 1rem; /* Space before quantity controls */
+}
+
+.equipmentInfo h3, /* Equipment name */
+.itemInfo h4 { /* Food/Drink name */
+  margin: 0 0 4px 0;
+  font-size: 1.05rem; /* Slightly larger */
+  font-weight: 500; /* Medium weight */
+  color: #2c3e50;
+}
+
+.price { /* Shared price style */
+  color: #4CAF50; /* Green price color */
+  font-weight: 600;
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* Quantity Control Styling */
+.quantityControl {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem; /* Adjust gap */
+}
+
+.quantityButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background-color: #e0e0e0; /* Lighter default background */
+  color: #555; /* Darker text */
+  font-weight: bold;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, color 0.2s, transform 0.1s;
+}
+.quantityButton:hover:not(:disabled) {
+  background-color: #d1d1d1;
+  transform: scale(1.05);
+}
+.quantityButton:active:not(:disabled) {
+    transform: scale(0.95);
+}
+.quantityButton:disabled {
+    background-color: #f5f5f5;
+    color: #aaa;
+    cursor: not-allowed;
+}
+
+/* Specific styles for +/- buttons */
+.increaseButton {
+    background-color: #4CAF50; /* Green for increase */
+    color: white;
+}
+.increaseButton:hover:not(:disabled) {
+    background-color: #45a049;
+}
+.decreaseButton {
+    background-color: #f44336; /* Red for decrease */
+    color: white;
+}
+.decreaseButton:hover:not(:disabled) {
+    background-color: #e53935;
+}
+
+
+.quantity {
+  font-weight: 600;
+  font-size: 1.1rem;
+  min-width: 25px;
+  text-align: center;
+  color: #333;
+}
+
+/* Food & Drink Category Styling */
+.categoryContainer {
+  margin-bottom: 1.5rem;
+}
+.categoryTitle {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  color: #333;
+  font-weight: 500;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+}
+.itemsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Slightly larger min width */
+  gap: 1rem; /* Gap between items in grid */
+}
+
+
+/* Total Section Styling */
+.totalContainer {
+  background-color: #f8f9fa; /* Light background for contrast */
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.summaryItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center; /* Align items vertically */
+  margin-bottom: 0.8rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px dashed #ddd; /* Dashed separator */
+  font-size: 1rem;
+  color: #555;
+}
+.summaryItem:last-of-type { /* Remove border from last item (before grand total) */
+   border-bottom: none;
+}
+
+.summaryPrice { /* Style for individual price spans in summary */
+    font-weight: 600;
+    color: #333;
+}
+
+/* Grand Total Specific Styling */
+.grandTotal {
+  border-bottom: none; /* Remove default border */
+  border-top: 2px solid #4CAF50; /* Solid separator above */
+  margin-top: 1rem;
+  padding-top: 1rem;
+  font-size: 1.2rem; /* Larger font */
+}
+
+.grandTotalLabel {
+    font-weight: bold;
+    color: #2c3e50;
+}
+.grandTotalPrice {
+  font-weight: bold;
+  color: #4CAF50; /* Emphasize total price */
+  font-size: 1.3rem; /* Even larger */
+}
+
+/* Checkout Button Enhancements */
+.checkoutButton {
+  width: 100%;
+  padding: 1rem 1.5rem; /* Larger padding */
+  background: linear-gradient(to right, #4caf50, #388e3c); /* Gradient background */
+  color: white;
+  border: none;
+  border-radius: 8px; /* More rounded */
+  font-size: 1.15rem;
+  font-weight: 600; /* Bolder */
+  cursor: pointer;
+  margin-top: 1.5rem;
+  transition: all 0.3s ease;
+  letter-spacing: 0.5px; /* Add letter spacing */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.checkoutButton:hover:not(:disabled) {
+  background: linear-gradient(to right, #45a049, #2e7d32); /* Darker gradient on hover */
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+.checkoutButton:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.checkoutButton:disabled {
+  background: #cccccc; /* Standard disabled background */
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+
+/* --- Responsive adjustments if needed --- */
+@media (max-width: 768px) {
+    .equipmentSection,
+    .foodDrinkSection,
+    .totalSection {
+        padding: 1rem 1.5rem;
+    }
+
+    .equipmentItem,
+    .foodDrinkItem {
+        flex-direction: column; /* Stack vertically on small screens */
+        align-items: flex-start; /* Align left */
+        gap: 0.5rem;
+    }
+    .quantityControl {
+        width: 100%;
+        justify-content: flex-end; /* Move quantity controls to the right */
+        margin-top: 0.5rem;
+    }
+    .itemsGrid {
+        grid-template-columns: 1fr; /* Single column grid on small screens */
+    }
+
+    .summaryItem {
+        font-size: 0.95rem;
+    }
+    .grandTotal {
+        font-size: 1.1rem;
+    }
+    .grandTotalPrice {
+        font-size: 1.2rem;
+    }
+    .checkoutButton {
+        padding: 0.8rem 1rem;
+        font-size: 1.05rem;
+    }
+}
+
+
+.modalOverlay {
+  position: fixed; /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgba(0, 0, 0, 0.6); /* Black w/ opacity */
+  z-index: 1000; /* Make sure it's above other content */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modalContent {
+  background-color: #ffffff;
+  margin: auto;
+  padding: 30px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px; /* Max width */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-align: left; /* Reset text alignment if needed */
+}
+
+.modalTitle {
+  text-align: center;
+  color: #28a745; /* Success color */
+  margin-top: 0;
+  margin-bottom: 25px;
+  font-size: 1.8rem;
+}
+
+.modalSection {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+.modalSection:last-of-type {
+  border-bottom: none;
+  margin-bottom: 25px; /* More space before button */
+}
+
+
+.modalSectionTitle {
+  font-size: 1.1rem;
+  color: #333;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.modalContent p,
+.modalContent li {
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 5px;
+  font-size: 0.95rem;
+}
+
+.modalContent strong {
+    color: #333;
+}
+
+.modalContent ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.modalSummaryItem {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.modalGrandTotal {
+    font-weight: bold;
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px dashed #ccc;
+    font-size: 1.05rem;
+    color: #000;
+}
+
+.modalHomeButton {
+  display: block;
+  width: 100%;
+  padding: 12px 20px;
+  background-color: var(--primary-color); /* Use your theme color */
+  color: #000;
+  border: var();
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  transition: background-color 0.2s ease;
+}
+
+.modalHomeButton:hover {
+  background-color: var(--primary-hover-color); /* Darker shade for hover */
+}
+
+/* Add Bank Transfer specific info styles if needed */
+.bankTransferInfo {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    border: 1px solid #dee2e6;
+    font-size: 0.9rem;
+}
+.bankTransferInfo p {
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+.bankTransferInfo strong {
+    display: block;
+    margin-bottom: 8px;
+    color: #333;
+}
+.bankTransferInfo em {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+
+
+.paymentMethodSelector {
+  margin-bottom: 1.5rem; /* Space below selector before form details */
+  border-bottom: 1px solid #eee; /* Separator line */
+  padding-bottom: 1.5rem;
+}
+
+.paymentMethodTitle {
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+/* Flex container for the radio button options */
+.paymentOptionsContainer {
+  display: flex;
+  flex-wrap: wrap; /* Allow options to wrap on smaller screens */
+  gap: 1rem; /* Space between options */
+}
+
+/* Styling for each payment method option (label wrapping the radio) */
+.paymentMethodOption {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem; /* Space between radio button, icon, and text */
+  padding: 0.8rem 1.2rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  background-color: #fff;
+  flex-grow: 1; /* Allow options to grow */
+  min-width: 150px; /* Minimum width for each option */
+}
+
+/* Hide the actual radio button visually */
+.paymentMethodOption input[type="radio"] {
+  appearance: none; /* Modern way */
+  -webkit-appearance: none; /* Legacy */
+  width: 0;
+  height: 0;
+  opacity: 0;
+  position: absolute; /* Take out of layout flow */
+}
+
+
+/* Style for the text part of the option */
+.paymentMethodOption span {
+  font-weight: 500;
+}
+
+/* Style for logos within the option */
+.paymentLogo {
+    height: 20px; /* Adjust size as needed */
+    width: auto;
+    object-fit: contain;
+}
+
+
+/* Styling for the selected option */
+.paymentMethodOption.selected {
+  border-color: #007bff;
+  background-color: #e7f3ff; /* Light blue background for selected */
+  box-shadow: 0 0 0 1px #007bff;
+}
+
+/* Hover effect for non-selected options */
+.paymentMethodOption:not(.selected):hover {
+  border-color: #999;
+  background-color: #f8f9fa;
+}
+
+/* Styling for informational text shown for digital wallets */
+.digitalWalletInfo {
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  margin-top: 1rem; /* Space above if card fields were visible */
+  text-align: center;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+/* Styling for the bank transfer details section */
+.bankTransferInfo {
+  padding: 1.2rem;
+  background-color: #f0f7fb; /* Slightly different background */
+  border: 1px solid #cce5ff;
+  border-radius: 5px;
+  margin-top: 1rem;
+}
+
+.bankTransferInfo h4 {
+  margin-top: 0;
+  margin-bottom: 0.8rem;
+  color: #004085; /* Darker blue for heading */
+}
+
+.bankDetailsList {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 1rem;
+}
+
+.bankDetailsList li {
+    margin-bottom: 0.6rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.bankDetailsList li strong {
+    display: inline-block;
+    min-width: 120px; /* Align text */
+    color: #333;
+}
+
+.bankTransferInfo .transferContent strong {
+    display: block; /* Make label full width */
+    margin-bottom: 0.3rem;
+}
+
+.bankTransferInfo .codeBlock {
+    background-color: #e9ecef;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-family: monospace;
+    margin-right: 0.5rem;
+    font-size: 1rem;
+    color: #495057;
+}
+
+.bankTransferInfo .copyButton {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    vertical-align: middle;
+}
+.bankTransferInfo .copyButton:hover {
+    background-color: #5a6268;
+}
+
+
+.bankTransferInfo .importantNote {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #555;
+  font-style: italic;
+}
+
+
+
+.modeSelector {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2.5rem;
+  gap: 1rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.modeButton {
+  padding: 0.8rem 1.8rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  border: 2px solid transparent;
+  background-color: #f0f0f0;
+  color: #555;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.modeButton:hover {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.modeButton.active {
+  background-color: #e8f5e9; /* Light green */
+  color: #2e7d32; /* Darker green */
+  border-color: #4caf50; /* Green border */
+  font-weight: 600;
+}
+
+/* Training Session Form Styles */
+.trainingSection {
+  background-color: white;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.trainingGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Responsive grid */
+  gap: 1.5rem;
+}
+
+.trainingCard {
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column; /* Stack info and button */
+}
+
+.trainingCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.trainingCard.selected {
+  border-color: #4caf50;
+  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.2);
+}
+
+.trainingInfo {
+  padding: 1.2rem;
+  flex-grow: 1; /* Allow info section to grow */
+}
+
+.trainingInfo h3 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  color: #2c3e50;
+  font-size: 1.3rem;
+}
+
+.trainingInfo p {
+  margin-bottom: 0.6rem;
+  color: #555;
+  line-height: 1.5;
+}
+
+.trainingDescription {
+  font-style: italic;
+  color: #666;
+  margin-top: 1rem;
+}
+
+.trainingPrice {
+  margin-top: 1rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #4CAF50; /* Match theme */
+  text-align: right;
+}
+
+/* Re-use selectButton styles from Courts */
+.trainingCard .selectButton {
+  background-color: #f8f9fa;
+  padding: 0.75rem;
+  text-align: center;
+  font-weight: 500;
+  color: #555;
+  border-top: 1px solid #e0e0e0;
+  transition: all 0.2s;
+  margin-top: auto; /* Push button to bottom */
+}
+
+.trainingCard.selected .selectButton {
+  background-color: #4caf50;
+  color: white;
+}
+
+.noSessions {
+    text-align: center;
+    color: #777;
+    padding: 2rem;
+    font-style: italic;
+}
+
+/* Ensure payButton styles exist or add them */
+.payButton {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(to right, #4caf50, #388e3c);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.15rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 1.5rem;
+    transition: all 0.3s ease;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+.payButton:hover:not(:disabled) {
+    background: linear-gradient(to right, #45a049, #2e7d32);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+.payButton:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+.paymentDisabledMessage {
+    text-align: center;
+    color: #dc3545; /* Red color for warnings */
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+
+
+
+
