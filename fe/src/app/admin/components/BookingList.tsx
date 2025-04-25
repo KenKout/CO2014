@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import styles from '../Admin.module.css';
+import styles from '@/styles/Admin.module.css';
 
 interface Booking {
     booking_id: number;

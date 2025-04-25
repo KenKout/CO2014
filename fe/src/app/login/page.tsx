@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { createApiClient, API_BASE_URL } from '@/utils/api';
-import Link from 'next/link';
-import styles from './Login.module.css';
+import styles from '@/styles/Login.module.css';
 
 export default function LoginPage() {
   // State for toggling between Login and Signup

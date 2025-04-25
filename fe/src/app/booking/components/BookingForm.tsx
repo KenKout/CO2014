@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import styles from "../Booking.module.css";
+import styles from "@/styles/Booking.module.css";
 
 // Define an interface for the booking data
 interface BookingData {

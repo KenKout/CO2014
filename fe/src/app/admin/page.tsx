@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import StaffList from './components/StaffList';
 import CoachList from './components/CoachList';
 import BookingList from './components/BookingList';
-import styles from './Admin.module.css';
+import styles from '@/styles/Admin.module.css';
 
 type DashboardTab = 'staff' | 'coaches' | 'bookings';
 

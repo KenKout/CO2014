@@ -9,7 +9,7 @@ import Equipments, { EquipmentItem } from './components/Equipments'; // Keep imp
 import FoodAndDrink, { FoodDrinkItem } from './components/FoodAndDrink'; // Keep imports
 import Total from './components/Total';
 import TrainingSessionForm, { TrainingSession } from './components/TrainingSessionForm';
-import styles from './Booking.module.css';
+import styles from '../../styles/Booking.module.css';
 
 type BookingMode = 'court' | 'training';
 
