@@ -31,10 +31,16 @@ const UserList: React.FC = () => {
         username: '',
         password: '',
         phone: '',
+        name: '',
         user_type: 'Customer' as 'Customer' | 'Staff',
+        salary: '',
+        date_of_birth: '',
     });
     const [editUser, setEditUser] = useState({
         phone: '',
+        name: '',
+        salary: '',
+        date_of_birth: '',
     });
     const [promoteCoachData, setPromoteCoachData] = useState({
         description: '',
@@ -56,11 +62,21 @@ const UserList: React.FC = () => {
         setLoading(true);
         try {
             const response = await api.get('/admin/users/');
+            console.log('API Response:', response.data); // Log the response for debugging
             setUsers(response.data);
             setError(null);
-        } catch (err) {
+        } catch (err: any) {
             console.error('Error fetching users:', err);
-            setError('Failed to load users. Please try again.');
+            let errorMessage = 'Failed to load users. Please try again.';
+            if (err.response) {
+                errorMessage += ` Status: ${err.response.status}.`;
+                if (err.response.data && err.response.data.detail) {
+                    errorMessage += ` Detail: ${err.response.data.detail}.`;
+                }
+            } else if (err.message) {
+                errorMessage += ` Error: ${err.message}.`;
+            }
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -69,24 +85,42 @@ const UserList: React.FC = () => {
     const handleCreateUser = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const userData = {
+            const userData: any = {
                 username: newUser.username,
                 password: newUser.password,
                 phone: newUser.phone,
+                name: newUser.name,
                 user_type: newUser.user_type,
             };
+            if (newUser.user_type === 'Staff' && newUser.salary) {
+                userData.salary = parseInt(newUser.salary);
+            }
+            if (newUser.user_type === 'Customer' && newUser.date_of_birth) {
+                userData.date_of_birth = newUser.date_of_birth;
+            }
+            console.log('Creating user with data:', userData); // Log the data for debugging
             await api.post('/admin/users/', userData);
             setShowAddModal(false);
             setNewUser({ 
                 username: '', 
                 password: '', 
                 phone: '', 
+                name: '',
                 user_type: 'Customer',
+                salary: '',
+                date_of_birth: '',
             });
             fetchUsers(); // Refresh the list
-        } catch (err) {
+        } catch (err: any) {
             console.error('Error creating user:', err);
-            alert('Failed to create user. Please try again.');
+            let errorMessage = 'Failed to create user. Please try again.';
+            if (err.response) {
+                errorMessage += ` Status: ${err.response.status}.`;
+                if (err.response.data && err.response.data.detail) {
+                    errorMessage += ` Detail: ${err.response.data.detail}.`;
+                }
+            }
+            alert(errorMessage);
         }
     };
 
@@ -94,19 +128,37 @@ const UserList: React.FC = () => {
         e.preventDefault();
         if (!selectedUser) return;
         try {
-            const updateData = {
+            const updateData: any = {
                 phone: editUser.phone || undefined,
+                name: editUser.name || undefined,
             };
+            if (selectedUser.UserType === 'Staff' && editUser.salary) {
+                updateData.salary = parseInt(editUser.salary);
+            }
+            if (selectedUser.UserType === 'Customer' && editUser.date_of_birth) {
+                updateData.date_of_birth = editUser.date_of_birth;
+            }
+            console.log('Updating user with data:', updateData); // Log the data for debugging
             await api.put(`/admin/users/${selectedUser.Username}`, updateData);
             setShowEditModal(false);
             setSelectedUser(null);
             setEditUser({
                 phone: '',
+                name: '',
+                salary: '',
+                date_of_birth: '',
             });
             fetchUsers(); // Refresh the list
-        } catch (err) {
+        } catch (err: any) {
             console.error('Error updating user:', err);
-            alert('Failed to update user. Please try again.');
+            let errorMessage = 'Failed to update user. Please try again.';
+            if (err.response) {
+                errorMessage += ` Status: ${err.response.status}.`;
+                if (err.response.data && err.response.data.detail) {
+                    errorMessage += ` Detail: ${err.response.data.detail}.`;
+                }
+            }
+            alert(errorMessage);
         }
     };
 
@@ -115,9 +167,16 @@ const UserList: React.FC = () => {
             try {
                 await api.delete(`/admin/users/${username}`);
                 fetchUsers(); // Refresh the list
-            } catch (err) {
+            } catch (err: any) {
                 console.error('Error deleting user:', err);
-                alert('Failed to delete user. Please try again.');
+                let errorMessage = 'Failed to delete user. Please try again.';
+                if (err.response) {
+                    errorMessage += ` Status: ${err.response.status}.`;
+                    if (err.response.data && err.response.data.detail) {
+                        errorMessage += ` Detail: ${err.response.data.detail}.`;
+                    }
+                }
+                alert(errorMessage);
             }
         }
     };
@@ -131,9 +190,16 @@ const UserList: React.FC = () => {
             } else {
                 alert('Invalid salary value.');
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error('Error promoting user to staff:', err);
-            alert('Failed to promote user to staff. Please try again.');
+            let errorMessage = 'Failed to promote user to staff. Please try again.';
+            if (err.response) {
+                errorMessage += ` Status: ${err.response.status}.`;
+                if (err.response.data && err.response.data.detail) {
+                    errorMessage += ` Detail: ${err.response.data.detail}.`;
+                }
+            }
+            alert(errorMessage);
         }
     };
 
@@ -149,9 +215,16 @@ const UserList: React.FC = () => {
             });
             setSelectedUser(null);
             fetchUsers(); // Refresh the list
-        } catch (err) {
+        } catch (err: any) {
             console.error('Error promoting user to coach:', err);
-            alert('Failed to promote user to coach. Please try again.');
+            let errorMessage = 'Failed to promote user to coach. Please try again.';
+            if (err.response) {
+                errorMessage += ` Status: ${err.response.status}.`;
+                if (err.response.data && err.response.data.detail) {
+                    errorMessage += ` Detail: ${err.response.data.detail}.`;
+                }
+            }
+            alert(errorMessage);
         }
     };
 
@@ -159,6 +232,9 @@ const UserList: React.FC = () => {
         setSelectedUser(user);
         setEditUser({
             phone: user.Phone || '',
+            name: user.details?.Name || '',
+            salary: user.UserType === 'Staff' && user.details?.Salary ? user.details.Salary.toString() : '',
+            date_of_birth: user.UserType === 'Customer' && user.details?.Date_of_Birth ? user.details.Date_of_Birth : '',
         });
         setShowEditModal(true);
     };
@@ -268,6 +344,16 @@ const UserList: React.FC = () => {
                                 />
                             </div>
                             <div className={styles.formGroup}>
+                                <label htmlFor="name">Name</label>
+                                <input
+                                    type="text"
+                                    id="name"
+                                    value={newUser.name}
+                                    onChange={(e) => setNewUser({...newUser, name: e.target.value})}
+                                    required
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
                                 <label htmlFor="phone">Phone</label>
                                 <input
                                     type="tel"
@@ -287,6 +373,30 @@ const UserList: React.FC = () => {
                                     <option value="Staff">Staff</option>
                                 </select>
                             </div>
+                            {newUser.user_type === 'Staff' && (
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="salary">Salary</label>
+                                    <input
+                                        type="number"
+                                        id="salary"
+                                        value={newUser.salary}
+                                        onChange={(e) => setNewUser({...newUser, salary: e.target.value})}
+                                        required
+                                    />
+                                </div>
+                            )}
+                            {newUser.user_type === 'Customer' && (
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="date_of_birth">Date of Birth</label>
+                                    <input
+                                        type="date"
+                                        id="date_of_birth"
+                                        value={newUser.date_of_birth}
+                                        onChange={(e) => setNewUser({...newUser, date_of_birth: e.target.value})}
+                                        required
+                                    />
+                                </div>
+                            )}
                             <div className={styles.modalActions}>
                                 <button type="button" onClick={() => setShowAddModal(false)}>Cancel</button>
                                 <button type="submit">Create User</button>
@@ -303,6 +413,15 @@ const UserList: React.FC = () => {
                         <h3>Edit User: {selectedUser.Username}</h3>
                         <form onSubmit={handleUpdateUser}>
                             <div className={styles.formGroup}>
+                                <label htmlFor="editName">Name</label>
+                                <input
+                                    type="text"
+                                    id="editName"
+                                    value={editUser.name}
+                                    onChange={(e) => setEditUser({...editUser, name: e.target.value})}
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
                                 <label htmlFor="editPhone">Phone</label>
                                 <input
                                     type="tel"
@@ -311,6 +430,28 @@ const UserList: React.FC = () => {
                                     onChange={(e) => setEditUser({...editUser, phone: e.target.value})}
                                 />
                             </div>
+                            {selectedUser.UserType === 'Staff' && (
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="editSalary">Salary</label>
+                                    <input
+                                        type="number"
+                                        id="editSalary"
+                                        value={editUser.salary}
+                                        onChange={(e) => setEditUser({...editUser, salary: e.target.value})}
+                                    />
+                                </div>
+                            )}
+                            {selectedUser.UserType === 'Customer' && (
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="editDateOfBirth">Date of Birth</label>
+                                    <input
+                                        type="date"
+                                        id="editDateOfBirth"
+                                        value={editUser.date_of_birth}
+                                        onChange={(e) => setEditUser({...editUser, date_of_birth: e.target.value})}
+                                    />
+                                </div>
+                            )}
                             <div className={styles.modalActions}>
                                 <button type="button" onClick={() => setShowEditModal(false)}>Cancel</button>
                                 <button type="submit">Update User</button>
