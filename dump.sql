@@ -224,3 +224,48 @@ BEGIN
 END //
 
 DELIMITER ;
+
+-- Trigger to automatically chang the rating of the session when a feedback is added on session
+
+DELIMITER $$
+
+-- Trigger to update session rating after a new feedback is inserted
+CREATE TRIGGER trg_FeedBack_AfterInsert_UpdateSessionRating
+AFTER INSERT ON FeedBack
+FOR EACH ROW
+BEGIN
+    -- Check if the feedback is for a Session and a SessionID is provided
+    IF NEW.`ON` = 'Session' AND NEW.SessionID IS NOT NULL THEN -- Added backticks here
+        -- Calculate the average rating for this session and update the Training_Session table
+        UPDATE Training_Session
+        SET Rating = (SELECT AVG(Rate) FROM FeedBack WHERE `ON` = 'Session' AND SessionID = NEW.SessionID) -- Added backticks here
+        WHERE SessionID = NEW.SessionID;
+    END IF;
+END$$
+
+-- Trigger to update session rating after a feedback is updated
+CREATE TRIGGER trg_FeedBack_AfterUpdate_UpdateSessionRating
+AFTER UPDATE ON FeedBack
+FOR EACH ROW
+BEGIN
+    -- Check if the OLD feedback was for a Session and a SessionID was provided.
+    -- If so, recalculate the rating for the OLD session (in case the session changed or feedback is no longer 'Session').
+    IF OLD.`ON` = 'Session' AND OLD.SessionID IS NOT NULL THEN -- Added backticks here
+        UPDATE Training_Session
+        SET Rating = (SELECT AVG(Rate) FROM FeedBack WHERE `ON` = 'Session' AND SessionID = OLD.SessionID) -- Added backticks here
+        WHERE SessionID = OLD.SessionID;
+    END IF;
+
+    -- Check if the NEW feedback is for a Session and a SessionID is provided.
+    -- If so, recalculate the rating for the NEW session. This handles:
+    -- 1. Rating change on the same session.
+    -- 2. Feedback changing from 'Court' to 'Session'.
+    -- 3. Feedback changing from one SessionID to another.
+    IF NEW.`ON` = 'Session' AND NEW.SessionID IS NOT NULL THEN -- Added backticks here
+        UPDATE Training_Session
+        SET Rating = (SELECT AVG(Rate) FROM FeedBack WHERE `ON` = 'Session' AND SessionID = NEW.SessionID) -- Added backticks here
+        WHERE SessionID = NEW.SessionID;
+    END IF;
+END$$
+
+DELIMITER ;
