@@ -2,8 +2,8 @@
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useCallback } from 'react';
-import { EquipmentItem } from '../booking/Equipments';
-import { FoodDrinkItem } from '../booking/FoodAndDrink';
+import { EquipmentItem } from '@/app/booking/components/Equipments';
+import { FoodDrinkItem } from '@/app/booking/components/FoodAndDrink';
 
 // --- Define Types ---
 interface BookingData {
