@@ -1,12 +1,15 @@
 'use client'; // Mark this component as a Client Component
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { createApiClient, API_BASE_URL } from '@/utils/api';
 import styles from '@/styles/Login.module.css';
 import Link from 'next/link';
 
 export default function LoginPage() {
+  const { login } = useAuth(); // Move this to the top level
+  const router = useRouter(); // Move this to the top level
   // State for toggling between Login
 
   // State for Forgot Password Modal
@@ -53,18 +56,19 @@ export default function LoginPage() {
     try {
       const apiClient = createApiClient(null);
       const response = await apiClient.post('/auth/login', { username: loginEmail, password: loginPassword });
-      if (response.ok) {
-        const data = await response.json();
-        const { login } = useAuth();
-        login(data.access_token);
-        setLoginAlert({ message: 'Login successful!', type: 'success', visible: true });
-      } else {
-        const errorData = await response.json();
-        setLoginAlert({ message: errorData.detail || 'Login failed.', type: 'error', visible: true });
-      }
+      
+      // Use login from context that was defined at the top level
+      login(response.data.access_token);
+      setLoginAlert({ message: 'Login successful!', type: 'success', visible: true });
+      
+      // Use router that was defined at the top level
+      setTimeout(() => {
+        router.push('/');
+      }, 2000);
     } catch (error) {
       console.error('Login error:', error);
-      setLoginAlert({ message: 'An error occurred during login.', type: 'error', visible: true });
+      const errorMessage = (error as any)?.response?.data?.detail || 'An error occurred during login.';
+      setLoginAlert({ message: errorMessage, type: 'error', visible: true });
     }
   };
 
