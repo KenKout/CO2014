@@ -1,100 +1,153 @@
 // app/booking/components/Equipments.tsx
 "use client";
 
-import { useState, useEffect } from "react"; // Import useEffect if needed elsewhere, not strictly needed for this change
+import { useState, useEffect } from "react";
 import styles from "@/styles/Booking.module.css";
+import { createApiClient } from '@/utils/api';
+
+// API response interface
+interface EquipmentResponse {
+    EquipmentID: number;
+    Price: number;
+    Type: string;
+    Stock: number;
+    Name: string;
+    Brand: string;
+    url: string | null;
+}
 
 export interface EquipmentItem {
-	id: string;
-	name: string;
-	price: number; // Price is now in VND
-	quantity: number;
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+    brand?: string;
+    type?: string;
+    stock?: number;
+    imageUrl?: string | null;
 }
 
 interface EquipmentsProps {
-	onEquipmentChange: (items: EquipmentItem[]) => void;
+    onEquipmentChange: (items: EquipmentItem[]) => void;
 }
 
 const Equipments = ({ onEquipmentChange }: EquipmentsProps) => {
-	// --- MODIFICATION START ---
-	// Update prices to plausible VND amounts
-	const [equipmentItems, setEquipmentItems] = useState<EquipmentItem[]>([
-		{ id: "racket", name: "Racket Rental", price: 40000, quantity: 0 },
-		{ id: "shoes", name: "Court Shoes Rental", price: 60000, quantity: 0 }, // e.g., 150,000 VND
-		{
-			id: "wristband",
-			name: "Wristband Purchase",
-			price: 15000,
-			quantity: 0,
-		}, // e.g., 50,000 VND
-		{ id: "towel", name: "Towel Rental", price: 30000, quantity: 0 }, // e.g., 70,000 VND
-	]);
-	// --- MODIFICATION END ---
+    const [equipmentItems, setEquipmentItems] = useState<EquipmentItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-	const handleQuantityChange = (id: string, quantity: number) => {
-		const newQuantity = Math.max(0, quantity); // Ensure quantity doesn't go below 0
-		const updatedItems = equipmentItems.map((item) =>
-			item.id === id ? { ...item, quantity: newQuantity } : item
-		);
-		setEquipmentItems(updatedItems);
-		onEquipmentChange(updatedItems); // Notify parent component
-	};
+    useEffect(() => {
+        const fetchEquipment = async () => {
+            try {
+                setLoading(true);
+                const apiClient = createApiClient(null);
+                const response = await apiClient.get('/public/equipment/');
+                
+                // Transform the data from the API to match our EquipmentItem interface
+                const transformedEquipment = response.data.map((item: EquipmentResponse) => ({
+                    id: item.EquipmentID.toString(),
+                    name: item.Name,
+                    price: item.Price,
+                    quantity: 0,
+                    brand: item.Brand,
+                    type: item.Type,
+                    stock: item.Stock,
+                    imageUrl: item.url
+                }));
+                
+                setEquipmentItems(transformedEquipment);
+                setLoading(false);
+            } catch (err) {
+                setError('Failed to load equipment. Please try again later.');
+                setLoading(false);
+                console.error('Error fetching equipment:', err);
+            }
+        };
 
-	// Use useEffect to call onEquipmentChange initially if needed, though typically done on interaction
-	// useEffect(() => {
-	//   onEquipmentChange(equipmentItems);
-	// }, []); // Empty dependency array means run once on mount
+        fetchEquipment();
+    }, []);
 
-	return (
-		<section className={styles.equipmentSection}>
-			<h2 className={styles.sectionTitle}>Equipment Rental</h2>
-			<div className={styles.equipmentContainer}>
-				{equipmentItems.map((item) => (
-					<div key={item.id} className={styles.equipmentItem}>
-						<div className={styles.equipmentInfo}>
-							<h3>{item.name}</h3>
-							{/* --- MODIFICATION START --- */}
-							{/* Update price display */}
-							<p className={styles.price}>
-								{item.price.toLocaleString("vi-VN")} VND
-							</p>
-							{/* --- MODIFICATION END --- */}
-						</div>
-						<div className={styles.quantityControl}>
-							<button
-								className={`${styles.quantityButton} ${styles.decreaseButton}`} // Added specific class
-								onClick={() =>
-									handleQuantityChange(
-										item.id,
-										item.quantity - 1
-									)
-								}
-								aria-label={`Decrease ${item.name} quantity`}
-								disabled={item.quantity === 0} // Disable if quantity is 0
-							>
-								-
-							</button>
-							<span className={styles.quantity}>
-								{item.quantity}
-							</span>
-							<button
-								className={`${styles.quantityButton} ${styles.increaseButton}`} // Added specific class
-								onClick={() =>
-									handleQuantityChange(
-										item.id,
-										item.quantity + 1
-									)
-								}
-								aria-label={`Increase ${item.name} quantity`}
-							>
-								+
-							</button>
-						</div>
-					</div>
-				))}
-			</div>
-		</section>
-	);
+	   const handleQuantityChange = (id: string, quantity: number) => {
+	       const newQuantity = Math.max(0, quantity); // Ensure quantity doesn't go below 0
+	       const updatedItems = equipmentItems.map((item) =>
+	           item.id === id ? { ...item, quantity: newQuantity } : item
+	       );
+	       setEquipmentItems(updatedItems);
+	       onEquipmentChange(updatedItems); // Notify parent component
+	   };
+
+	   // Initial empty equipment list notification
+	   useEffect(() => {
+	       onEquipmentChange(equipmentItems);
+	   }, [equipmentItems, onEquipmentChange]);
+
+	   if (loading) {
+	       return <section className={styles.equipmentSection}><h2 className={styles.sectionTitle}>Equipment Rental</h2><p>Loading equipment...</p></section>;
+	   }
+
+	   if (error) {
+	       return <section className={styles.equipmentSection}><h2 className={styles.sectionTitle}>Equipment Rental</h2><p>{error}</p></section>;
+	   }
+
+	   if (equipmentItems.length === 0) {
+	       return <section className={styles.equipmentSection}><h2 className={styles.sectionTitle}>Equipment Rental</h2><p>No equipment available.</p></section>;
+	   }
+
+	   return (
+	       <section className={styles.equipmentSection}>
+	           <h2 className={styles.sectionTitle}>Equipment Rental</h2>
+	           <div className={styles.equipmentContainer}>
+	               {equipmentItems.map((item) => (
+	                   <div key={item.id} className={styles.equipmentItem}>
+	                       <div className={styles.equipmentInfo}>
+	                           <h3>{item.name}</h3>
+	                           {item.brand && <p className={styles.brand}>Brand: {item.brand}</p>}
+	                           {item.type && <p className={styles.type}>Type: {item.type}</p>}
+	                           <p className={styles.price}>
+	                               {item.price.toLocaleString("vi-VN")} VND
+	                           </p>
+	                           {item.stock !== undefined && (
+	                               <p className={styles.stock}>
+	                                   Available: {item.stock}
+	                               </p>
+	                           )}
+	                       </div>
+	                       <div className={styles.quantityControl}>
+	                           <button
+	                               className={`${styles.quantityButton} ${styles.decreaseButton}`}
+	                               onClick={() =>
+	                                   handleQuantityChange(
+	                                       item.id,
+	                                       item.quantity - 1
+	                                   )
+	                               }
+	                               aria-label={`Decrease ${item.name} quantity`}
+	                               disabled={item.quantity === 0}
+	                           >
+	                               -
+	                           </button>
+	                           <span className={styles.quantity}>
+	                               {item.quantity}
+	                           </span>
+	                           <button
+	                               className={`${styles.quantityButton} ${styles.increaseButton}`}
+	                               onClick={() =>
+	                                   handleQuantityChange(
+	                                       item.id,
+	                                       item.quantity + 1
+	                                   )
+	                               }
+	                               aria-label={`Increase ${item.name} quantity`}
+	                               disabled={item.stock !== undefined && item.quantity >= item.stock}
+	                           >
+	                               +
+	                           </button>
+	                       </div>
+	                   </div>
+	               ))}
+	           </div>
+	       </section>
+	   );
 };
 
 export default Equipments;

@@ -95,6 +95,7 @@ export default function Page() {
                 <Courts
                     selectedCourt={bookingData.selectedCourt}
                     onCourtSelect={handleCourtSelect}
+                    bookingData={bookingData}
                 />
                 <Equipments
                   onEquipmentChange={handleEquipmentChange}

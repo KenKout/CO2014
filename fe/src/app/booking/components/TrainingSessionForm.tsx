@@ -1,128 +1,162 @@
-// app/booking/components/TrainingSessionForm.tsx
 "use client";
-
+// app/booking/components/TrainingSessionForm.tsx
+import { useState, useEffect } from 'react';
 import styles from "@/styles/Booking.module.css";
+import { createApiClient } from '@/utils/api';
 
-// Define the structure for a Training Session
+// Updated interface to match the API data
 export interface TrainingSession {
-	id: string;
-	name: string;
-	level: "Beginner" | "Intermediate" | "Advanced";
-	description: string;
-	coach: string;
-	courtAssigned: number;
-	schedule: string; // e.g., "Tuesdays, 7 PM - 8 PM (4 weeks)"
-	price: number; // Price in VND for the whole course/session pack
+    id: string;
+    level: "Beginner" | "Intermediate" | "Advanced";
+    coachID: number;
+    courtAssigned: number;
+    schedule: string;
+    price: number;
+    startDate: string;
+    endDate: string;
+    rating: number;
+    maxStudents: number;
+    // Add any additional fields needed for display
+    coachName?: string;
+    coachImageUrl?: string;
 }
 
 interface TrainingSessionFormProps {
-	selectedSession: TrainingSession | null;
-	onSessionSelect: (session: TrainingSession | null) => void;
+    selectedSession: TrainingSession | null;
+    onSessionSelect: (session: TrainingSession | null) => void;
 }
 
-// Sample Data (3 sessions with different levels)
-const availableSessions: TrainingSession[] = [
-	{
-		id: "ts001",
-		name: "Beginner Fundamentals",
-		level: "Beginner",
-		description:
-			"Master the basics: grip, footwork, serve, and clear shots. Perfect for new players.",
-		coach: "Ken Nguyen",
-		courtAssigned: 5, // Assign a standard court
-		schedule: "Mondays & Wednesdays, 6 PM - 7 PM (4 Weeks)",
-		price: 1200000, // e.g., 1,200,000 VND
-	},
-	{
-		id: "ts002",
-		name: "Intermediate Drills & Tactics",
-		level: "Intermediate",
-		description:
-			"Refine your strokes, improve net play, drops, and smashes. Learn basic game strategies.",
-		coach: "Nguyen Ken",
-		courtAssigned: 3, // Assign a standard court
-		schedule: "Tuesdays & Thursdays, 7:30 PM - 8:30 PM (4 Weeks)",
-		price: 1600000, // e.g., 1,600,000 VND
-	},
-	{
-		id: "ts003",
-		name: "Advanced Sparring & Strategy",
-		level: "Advanced",
-		description:
-			"High-intensity drills, competitive match play, advanced footwork, and tactical analysis.",
-		coach: "Dien Nguyen",
-		courtAssigned: 1, // Assign a premium court
-		schedule: "Saturdays, 9 AM - 11 AM (Single Session Drop-in)",
-		price: 350000, // e.g., 350,000 VND per session
-	},
-];
-
 const TrainingSessionForm = ({
-	selectedSession,
-	onSessionSelect,
+    selectedSession,
+    onSessionSelect,
 }: TrainingSessionFormProps) => {
-	return (
-		<section className={styles.trainingSection}>
-			<h2 className={styles.sectionTitle}>Available Training Sessions</h2>
+    const [availableSessions, setAvailableSessions] = useState<TrainingSession[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-			{availableSessions.length > 0 ? (
-				<div className={styles.trainingGrid}>
-					{availableSessions.map((session) => (
-						<div
-							key={session.id}
-							className={`${styles.trainingCard} ${
-								selectedSession?.id === session.id
-									? styles.selected
-									: ""
-							}`}
-							onClick={() => onSessionSelect(session)}
-							role="button" // Improve accessibility
-							tabIndex={0} // Make it focusable
-							onKeyDown={(e) => {
-								if (e.key === "Enter" || e.key === " ")
-									onSessionSelect(session);
-							}} // Keyboard activation
-						>
-							<div className={styles.trainingInfo}>
-								<h3>
-									{session.name}{" "}
-									<span className={styles.levelBadge}>
-										{session.level}
-									</span>
-								</h3>
-								<p>
-									<strong>Coach:</strong> {session.coach}
-								</p>
-								<p>
-									<strong>Schedule:</strong>{" "}
-									{session.schedule}
-								</p>
-								<p>
-									<strong>Assigned Court:</strong>{" "}
-									{session.courtAssigned}
-								</p>
-								<p className={styles.trainingDescription}>
-									{session.description}
-								</p>
-								<p className={styles.trainingPrice}>
-									{session.price.toLocaleString("vi-VN")} VND
-								</p>
-							</div>
-							<div className={styles.selectButton}>
-								{selectedSession?.id === session.id
-									? "Selected"
-									: "Select Session"}
-							</div>
-						</div>
-					))}
-				</div>
-			) : (
-				<p className={styles.noSessions}>
-					No training sessions currently available.
-				</p>
-			)}
-		</section>
-	);
+    useEffect(() => {
+        const fetchSessions = async () => {
+            try {
+                setLoading(true);
+                const apiClient = createApiClient(null);
+                const response = await apiClient.get('/public/training-sessions/');
+                
+                // Transform the data to match our expected format
+                const transformedData = response.data.map((session: any) => ({
+                    id: session.SessionID.toString(),
+                    level: session.Type,
+                    coachID: session.CoachID,
+                    courtAssigned: session.CourtID,
+                    schedule: session.Schedule,
+                    price: session.Price,
+                    startDate: session.StartDate,
+                    endDate: session.EndDate,
+                    rating: session.Rating,
+                    maxStudents: session.Max_Students,
+                    coachName: session.CoachName,
+                    coachImageUrl: session.coach_image_url
+                }));
+                
+                setAvailableSessions(transformedData);
+                setLoading(false);
+            } catch (err) {
+                setError('Failed to load training sessions. Please try again later.');
+                setLoading(false);
+                console.error('Error fetching training sessions:', err);
+            }
+        };
+
+        fetchSessions();
+    }, []);
+
+    if (loading) {
+        return <section className={styles.trainingSection}><h2 className={styles.sectionTitle}>Available Training Sessions</h2><p>Loading sessions...</p></section>;
+    }
+
+    if (error) {
+        return <section className={styles.trainingSection}><h2 className={styles.sectionTitle}>Available Training Sessions</h2><p>{error}</p></section>;
+    }
+
+    // Format dates for display
+    const formatDate = (dateString: string) => {
+        if (!dateString) return "N/A";
+        const date = new Date(dateString);
+        return date.toLocaleDateString();
+    };
+
+    return (
+        <section className={styles.trainingSection}>
+            <h2 className={styles.sectionTitle}>Available Training Sessions</h2>
+
+            {availableSessions.length > 0 ? (
+                <div className={styles.trainingGrid}>
+                    {availableSessions.map((session) => (
+                        <div
+                            key={session.id}
+                            className={`${styles.trainingCard} ${
+                                selectedSession?.id === session.id
+                                    ? styles.selected
+                                    : ""
+                            }`}
+                            onClick={() => onSessionSelect(session)}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ")
+                                    onSessionSelect(session);
+                            }}
+                        >
+                            <div className={styles.trainingInfo}>
+                                <h3>
+                                    <span className={styles.levelBadge}>
+                                        {session.level}
+                                    </span>
+                                </h3>
+                                {session.coachName && (
+                                    <p>
+                                        <strong>Coach:</strong>{" "}
+                                        {session.coachName}
+                                    </p>
+                                )}
+                                <p>
+                                    <strong>Schedule:</strong>{" "}
+                                    {session.schedule}
+                                </p>
+                                <p>
+                                    <strong>Court:</strong>{" "}
+                                    {session.courtAssigned}
+                                </p>
+                                <p>
+                                    <strong>Duration:</strong>{" "}
+                                    {formatDate(session.startDate)} - {formatDate(session.endDate)}
+                                </p>
+                                <p>
+                                    <strong>Rating:</strong>{" "}
+                                    {session.rating ? `${session.rating}/5` : "Not rated yet"}
+                                </p>
+                                <p>
+                                    <strong>Capacity:</strong>{" "}
+                                    {session.maxStudents} students
+                                </p>
+                                <p className={styles.trainingPrice}>
+                                    {(session.price || 0).toLocaleString("vi-VN")} VND
+                                </p>
+                            </div>
+                            <div className={styles.selectButton}>
+                                {selectedSession?.id === session.id
+                                    ? "Selected"
+                                    : "Select Session"}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <p className={styles.noSessions}>
+                    No training sessions currently available.
+                </p>
+            )}
+        </section>
+    );
 };
 
 export default TrainingSessionForm;
