@@ -6,327 +6,514 @@ import { createApiClient } from "@/utils/api";
 import styles from "@/styles/Admin.module.css";
 import { useAuth } from '@/context/AuthContext';
 
+// Matches Backend AdminFoodResponse and relevant parts of FoodBase/AdminFoodCreateRequest
 interface FoodItem {
-	id: number;
-	name: string;
-	description: string;
-	price: number;
-	calories: number;
-	category: string;
-	is_available: boolean;
-	image_url?: string;
+    FoodID: number;
+    Name: string;
+    // Description is missing in the backend model provided
+    Price: number; // Assuming backend stores price in cents as integer
+    // Calories is missing in the backend model provided
+    Category: string; // Should match values in backend FoodCategory enum
+    Stock: number;
+    url?: string; // Optional image URL
+}
+
+// For the Create form state (matches AdminFoodCreateRequest structure)
+interface NewFoodItemState {
+    FoodID: string; // Input as string, parsed later
+    Name: string;
+    Category: string;
+    Price: string; // Input as string (dollars/euros), converted to cents later
+    Stock: string; // Input as string, parsed later
+    url: string;
+}
+
+// For the Edit form state (matches AdminFoodUpdateRequest structure)
+interface EditFoodItemState {
+    Name?: string;
+    Category?: string;
+    Price?: string; // Input as string (dollars/euros), converted to cents later
+    Stock?: string; // Input as string, parsed later
+    url?: string;
 }
 
 const FoodList: React.FC = () => {
-	const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-	const [showAddModal, setShowAddModal] = useState(false);
-	const [newFoodItem, setNewFoodItem] = useState({
-		name: "",
-		description: "",
-		price: 0,
-		calories: 0,
-		category: "",
-		is_available: true,
-		image_url: "",
-	});
+    const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-	// Get token from your auth context or localStorage
-	const { token } = useAuth();
-	const api = createApiClient(token);
+    // Add Modal State
+    const [showAddModal, setShowAddModal] = useState(false);
+    const initialNewFoodItemState: NewFoodItemState = {
+        FoodID: "",
+        Name: "",
+        Category: "",
+        Price: "0.00",
+        Stock: "0",
+        url: "",
+    };
+    const [newFoodItem, setNewFoodItem] = useState<NewFoodItemState>(initialNewFoodItemState);
 
-	useEffect(() => {
-		fetchFoodItems();
-	}, []);
+    // Edit Modal State
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingFoodItem, setEditingFoodItem] = useState<FoodItem | null>(null);
+    const [editFormData, setEditFormData] = useState<EditFoodItemState>({});
 
-	const fetchFoodItems = async () => {
-		setLoading(true);
-		try {
-			const response = await api.get("/admin/food/");
-			setFoodItems(response.data);
-			setError(null);
-		} catch (err) {
-			console.error("Error fetching food items:", err);
-			setError("Failed to load food items. Please try again.");
-		} finally {
-			setLoading(false);
-		}
-	};
 
-	const handleCreateFoodItem = async (e: React.FormEvent) => {
-		e.preventDefault();
-		try {
-			await api.post("/admin/food/", {
-				...newFoodItem,
-				price: parseFloat(newFoodItem.price.toString()),
-				calories: parseInt(newFoodItem.calories.toString()),
-			});
-			setShowAddModal(false);
-			setNewFoodItem({
-				name: "",
-				description: "",
-				price: 0,
-				calories: 0,
-				category: "",
-				is_available: true,
-				image_url: "",
-			});
-			fetchFoodItems();
-		} catch (err) {
-			console.error("Error creating food item:", err);
-			alert("Failed to create food item. Please try again.");
-		}
-	};
+    const { token } = useAuth();
+    const api = createApiClient(token);
 
-	const handleUpdateFoodItem = async (foodId: number, data: any) => {
-		try {
-			await api.put(`/admin/food/${foodId}`, data);
-			fetchFoodItems();
-		} catch (err) {
-			console.error("Error updating food item:", err);
-			alert("Failed to update food item. Please try again.");
-		}
-	};
+    useEffect(() => {
+        fetchFoodItems();
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // Added eslint-disable-line as fetchFoodItems is defined below but stable
 
-	const handleDeleteFoodItem = async (foodId: number) => {
-		if (window.confirm("Are you sure you want to delete this food item?")) {
-			try {
-				await api.delete(`/admin/food/${foodId}`);
-				fetchFoodItems();
-			} catch (err) {
-				console.error("Error deleting food item:", err);
-				alert("Failed to delete food item. Please try again.");
-			}
-		}
-	};
+    const fetchFoodItems = async () => {
+        setLoading(true);
+        try {
+            // GET /admin/food/ - Matches backend
+            const response = await api.get("/admin/food/");
+            // Map response data (AdminFoodResponse[]) to frontend FoodItem[]
+            const items: FoodItem[] = response.data.map((item: any) => ({
+                FoodID: item.FoodID,
+                Name: item.Name,
+                Price: item.Price, // Assuming backend sends cents
+                Category: item.Category,
+                Stock: item.Stock,
+                url: item.url,
+            }));
+            setFoodItems(items);
+            setError(null);
+        } catch (err) {
+            console.error("Error fetching food items:", err);
+            setError("Failed to load food items. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
-	if (loading)
-		return (
-			<div className={styles.loadingIndicator}>Loading food items...</div>
-		);
-	if (error) return <div className={styles.error}>{error}</div>;
+    // --- Add Item Logic ---
 
-	return (
-		<div className={styles.listContainer}>
-			<div className={styles.listHeader}>
-				<h2>Cafeteria Food Management</h2>
-				<button
-					className={styles.addButton}
-					onClick={() => setShowAddModal(true)}
-				>
-					Add New Food Item
-				</button>
-			</div>
+    const handleAddNewClick = () => {
+        setNewFoodItem(initialNewFoodItemState); // Reset form
+        setShowAddModal(true);
+    };
 
-			<table className={styles.dataTable}>
-				<thead>
-					<tr>
-						<th>ID</th>
-						<th>Name</th>
-						<th>Category</th>
-						<th>Price</th>
-						<th>Calories</th>
-						<th>Status</th>
-						<th>Actions</th>
-					</tr>
-				</thead>
-				<tbody>
-					{foodItems.map((item) => (
-						<tr key={item.id}>
-							<td>{item.id}</td>
-							<td>
-								{item.name}
-								<div className={styles.itemDescription}>
-									{item.description}
-								</div>
-							</td>
-							<td>{item.category}</td>
-							<td>${item.price.toFixed(2)}</td>
-							<td>{item.calories} cal</td>
-							<td>
-								<span
-									className={
-										item.is_available
-											? styles.statusActive
-											: styles.statusInactive
-									}
-								>
-									{item.is_available
-										? "Available"
-										: "Unavailable"}
-								</span>
-							</td>
-							<td>
-								<button
-									className={styles.actionButton}
-									onClick={() =>
-										handleUpdateFoodItem(item.id, {
-											is_available: !item.is_available,
-										})
-									}
-								>
-									{item.is_available
-										? "Mark Unavailable"
-										: "Mark Available"}
-								</button>
-								<button
-									className={`${styles.actionButton} ${styles.deleteButton}`}
-									onClick={() =>
-										handleDeleteFoodItem(item.id)
-									}
-								>
-									Delete
-								</button>
-							</td>
-						</tr>
-					))}
-				</tbody>
-			</table>
+    const handleNewFoodInputChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    ) => {
+        const { name, value } = e.target;
+        setNewFoodItem(prev => ({ ...prev, [name]: value }));
+    };
 
-			{foodItems.length === 0 && !loading && (
-				<div className={styles.emptyMessage}>No food items found.</div>
-			)}
+    const handleCreateFoodItem = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            // Prepare data matching AdminFoodCreateRequest
+            const payload = {
+                FoodID: parseInt(newFoodItem.FoodID, 10),
+                Name: newFoodItem.Name,
+                Category: newFoodItem.Category,
+                // Convert dollars/euros string to integer cents
+                Price: Math.round(parseFloat(newFoodItem.Price) * 100),
+                Stock: parseInt(newFoodItem.Stock, 10),
+                url: newFoodItem.url || null, // Send null if empty
+            };
 
-			{/* Add Food Item Modal */}
-			{showAddModal && (
-				<div className={styles.modalBackdrop}>
-					<div className={styles.modal}>
-						<h3>Add New Food Item</h3>
-						<form onSubmit={handleCreateFoodItem}>
-							<div className={styles.formGroup}>
-								<label htmlFor="name">Name</label>
-								<input
-									type="text"
-									id="name"
-									value={newFoodItem.name}
-									onChange={(e) =>
-										setNewFoodItem({
-											...newFoodItem,
-											name: e.target.value,
-										})
-									}
-									required
-								/>
-							</div>
-							<div className={styles.formGroup}>
-								<label htmlFor="description">Description</label>
-								<textarea
-									id="description"
-									value={newFoodItem.description}
-									onChange={(e) =>
-										setNewFoodItem({
-											...newFoodItem,
-											description: e.target.value,
-										})
-									}
-									required
-								/>
-							</div>
-							<div className={styles.formGroup}>
-								<label htmlFor="price">Price ($)</label>
-								<input
-									type="number"
-									id="price"
-									step="0.01"
-									min="0"
-									value={newFoodItem.price}
-									onChange={(e) =>
-										setNewFoodItem({
-											...newFoodItem,
-											price: parseFloat(e.target.value),
-										})
-									}
-									required
-								/>
-							</div>
-							<div className={styles.formGroup}>
-								<label htmlFor="calories">Calories</label>
-								<input
-									type="number"
-									id="calories"
-									min="0"
-									value={newFoodItem.calories}
-									onChange={(e) =>
-										setNewFoodItem({
-											...newFoodItem,
-											calories: parseInt(e.target.value),
-										})
-									}
-									required
-								/>
-							</div>
-							<div className={styles.formGroup}>
-								<label htmlFor="category">Category</label>
-								<select
-									id="category"
-									value={newFoodItem.category}
-									onChange={(e) =>
-										setNewFoodItem({
-											...newFoodItem,
-											category: e.target.value,
-										})
-									}
-									required
-								>
-									<option value="">Select a category</option>
-									<option value="Breakfast">Breakfast</option>
-									<option value="Lunch">Lunch</option>
-									<option value="Dinner">Dinner</option>
-									<option value="Snacks">Snacks</option>
-									<option value="Beverages">Beverages</option>
-									<option value="Protein">Protein</option>
-									<option value="Supplements">
-										Supplements
-									</option>
-								</select>
-							</div>
-							<div className={styles.formGroup}>
-								<label htmlFor="image_url">
-									Image URL (optional)
-								</label>
-								<input
-									type="url"
-									id="image_url"
-									value={newFoodItem.image_url}
-									onChange={(e) =>
-										setNewFoodItem({
-											...newFoodItem,
-											image_url: e.target.value,
-										})
-									}
-								/>
-							</div>
-							<div className={styles.formGroup}>
-								<label>
-									<input
-										type="checkbox"
-										checked={newFoodItem.is_available}
-										onChange={(e) =>
-											setNewFoodItem({
-												...newFoodItem,
-												is_available: e.target.checked,
-											})
-										}
-									/>
-									Available for order
-								</label>
-							</div>
-							<div className={styles.modalActions}>
-								<button
-									type="button"
-									onClick={() => setShowAddModal(false)}
-								>
-									Cancel
-								</button>
-								<button type="submit">Create Food Item</button>
-							</div>
-						</form>
-					</div>
-				</div>
-			)}
-		</div>
-	);
+            if (isNaN(payload.FoodID) || isNaN(payload.Price) || isNaN(payload.Stock)) {
+                alert("Please ensure FoodID, Price, and Stock are valid numbers.");
+                return;
+            }
+            if (!payload.Category) {
+                 alert("Please select a category.");
+                 return;
+            }
+
+            // POST /admin/food/ - Matches backend
+            await api.post("/admin/food/", payload);
+
+            setShowAddModal(false);
+            fetchFoodItems(); // Refresh list
+        } catch (err: any) {
+            console.error("Error creating food item:", err);
+            const errorMsg = err.response?.data?.detail || "Failed to create food item. Check console for details.";
+            alert(`Error: ${errorMsg}`);
+        }
+    };
+
+    // --- Edit Item Logic ---
+
+    const handleEditClick = (item: FoodItem) => {
+        setEditingFoodItem(item);
+        // Pre-fill edit form data, converting price back to dollars/euros string
+        setEditFormData({
+            Name: item.Name,
+            Category: item.Category,
+            Price: (item.Price / 100).toFixed(2), // Convert cents to dollars string
+            Stock: item.Stock.toString(),
+            url: item.url || "",
+        });
+        setShowEditModal(true);
+    };
+
+    const handleEditInputChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    ) => {
+        const { name, value } = e.target;
+        setEditFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingFoodItem) return;
+
+        try {
+            // Prepare data matching AdminFoodUpdateRequest
+            const payload: { [key: string]: any } = {};
+            if (editFormData.Name !== undefined && editFormData.Name !== editingFoodItem.Name) payload.Name = editFormData.Name;
+            if (editFormData.Category !== undefined && editFormData.Category !== editingFoodItem.Category) payload.Category = editFormData.Category;
+            if (editFormData.Stock !== undefined && editFormData.Stock !== editingFoodItem.Stock.toString()) payload.Stock = parseInt(editFormData.Stock, 10);
+            if (editFormData.url !== undefined && editFormData.url !== (editingFoodItem.url || "")) payload.url = editFormData.url || null;
+
+            // Handle price conversion carefully
+            if (editFormData.Price !== undefined) {
+                const newPriceCents = Math.round(parseFloat(editFormData.Price) * 100);
+                if (newPriceCents !== editingFoodItem.Price) {
+                    payload.Price = newPriceCents;
+                }
+                 if (isNaN(newPriceCents)) {
+                    alert("Please ensure Price is a valid number.");
+                    return;
+                }
+            }
+             if (payload.Stock !== undefined && isNaN(payload.Stock)) {
+                alert("Please ensure Stock is a valid number.");
+                return;
+            }
+
+            if (Object.keys(payload).length === 0) {
+                setShowEditModal(false); // Nothing changed
+                return;
+            }
+
+            // PUT /admin/food/{foodId} - Matches backend
+            await api.put(`/admin/food/${editingFoodItem.FoodID}`, payload);
+
+            setShowEditModal(false);
+            setEditingFoodItem(null);
+            fetchFoodItems(); // Refresh list
+        } catch (err: any) {
+            console.error("Error updating food item:", err);
+            const errorMsg = err.response?.data?.detail || "Failed to update food item. Check console for details.";
+            alert(`Error: ${errorMsg}`);
+        }
+    };
+
+    // --- Toggle Stock Logic ---
+    const handleToggleStock = async (item: FoodItem) => {
+        const newStock = item.Stock > 0 ? 0 : 1; // Set to 0 if available, else set to 1
+        try {
+            // Use PUT for update, sending only the Stock field
+            await api.put(`/admin/food/${item.FoodID}`, { Stock: newStock });
+            fetchFoodItems(); // Refresh the list
+        } catch (err) {
+            console.error("Error toggling stock:", err);
+            alert("Failed to update stock status. Please try again.");
+        }
+    };
+
+
+    // --- Delete Item Logic ---
+
+    const handleDeleteFoodItem = async (foodId: number) => {
+        if (window.confirm("Are you sure you want to delete this food item? This might fail if the item is part of existing orders.")) {
+            try {
+                // DELETE /admin/food/{foodId} - Matches backend
+                await api.delete(`/admin/food/${foodId}`);
+                fetchFoodItems(); // Refresh list
+            } catch (err: any) {
+                console.error("Error deleting food item:", err);
+                const errorMsg = err.response?.data?.detail || "Failed to delete food item. Check console for details.";
+                alert(`Error: ${errorMsg}`);
+            }
+        }
+    };
+
+    // --- Render Logic ---
+
+    if (loading)
+        return (
+            <div className={styles.loadingIndicator}>Loading food items...</div>
+        );
+    if (error) return <div className={styles.error}>{error}</div>;
+
+  
+// Change in the formatPrice helper function
+const formatPrice = (cents: number) => {
+    return `${(cents / 100).toLocaleString('vi-VN')}₫`;
+}
+    return (
+        <div className={styles.listContainer}>
+            <div className={styles.listHeader}>
+                <h2>Cafeteria Food Management</h2>
+                <button
+                    className={styles.addButton}
+                    onClick={handleAddNewClick} // Use specific handler
+                >
+                    Add New Food Item
+                </button>
+            </div>
+
+            <table className={styles.dataTable}>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {foodItems.map((item) => (
+                        <tr key={item.FoodID}>
+                            <td>{item.FoodID}</td>
+                            <td>
+                                {item.Name}
+                                {item.url && <div className={styles.itemDescription}><a href={item.url} target="_blank" rel="noopener noreferrer">Image Link</a></div>}
+                            </td>
+                            <td>{item.Category}</td>
+                            <td>{formatPrice(item.Price)}</td> {/* Format price from cents */}
+                            <td>{item.Stock}</td>
+                            <td>
+                                <span
+                                    className={
+                                        item.Stock > 0
+                                            ? styles.statusActive
+                                            : styles.statusInactive
+                                    }
+                                >
+                                    {item.Stock > 0
+                                        ? "In Stock"
+                                        : "Out of Stock"}
+                                </span>
+                            </td>
+                            <td>
+                                <button
+                                    className={styles.actionButton}
+                                    onClick={() => handleEditClick(item)}
+                                >
+                                    Edit
+                                </button>
+                                <button
+                                    className={styles.actionButton}
+                                    onClick={() => handleToggleStock(item)} // Updated handler
+                                >
+                                    {item.Stock > 0
+                                        ? "Set OOS" // Out Of Stock
+                                        : "Set In Stock (1)"}
+                                </button>
+                                <button
+                                    className={`${styles.actionButton} ${styles.deleteButton}`}
+                                    onClick={() => handleDeleteFoodItem(item.FoodID)}
+                                >
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+
+            {foodItems.length === 0 && !loading && (
+                <div className={styles.emptyMessage}>No food items found.</div>
+            )}
+
+            {/* Add Food Item Modal */}
+            {showAddModal && (
+                <div className={styles.modalBackdrop}>
+                    <div className={styles.modal}>
+                        <h3>Add New Food Item</h3>
+                        <form onSubmit={handleCreateFoodItem}>
+                            {/* NOTE: Requiring FoodID on create is unusual. Usually DB handles this. */}
+                            <div className={styles.formGroup}>
+                                <label htmlFor="add-FoodID">Food ID *</label>
+                                <input
+                                    type="number"
+                                    id="add-FoodID"
+                                    name="FoodID" // Matches state key
+                                    value={newFoodItem.FoodID}
+                                    onChange={handleNewFoodInputChange}
+                                    required
+                                    min="0"
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label htmlFor="add-Name">Name *</label>
+                                <input
+                                    type="text"
+                                    id="add-Name"
+                                    name="Name" // Matches state key
+                                    value={newFoodItem.Name}
+                                    onChange={handleNewFoodInputChange}
+                                    required
+                                    maxLength={255}
+                                />
+                            </div>
+                            {/* Description field removed as it's not in backend model */}
+                            <div className={styles.formGroup}>
+                                <label htmlFor="add-Price">Price (VND) *</label>
+                                <input
+                                    type="number"
+                                    id="add-Price"
+                                    name="Price" // Matches state key
+                                    step="0.01"
+                                    min="0"
+                                    value={newFoodItem.Price}
+                                    onChange={handleNewFoodInputChange}
+                                    required
+                                />
+                            </div>
+                            {/* Calories field removed as it's not in backend model */}
+                            <div className={styles.formGroup}>
+                                <label htmlFor="add-Stock">Stock *</label>
+                                <input
+                                    type="number"
+                                    id="add-Stock"
+                                    name="Stock" // Matches state key
+                                    min="0"
+                                    step="1"
+                                    value={newFoodItem.Stock}
+                                    onChange={handleNewFoodInputChange}
+                                    required
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label htmlFor="add-Category">Category *</label>
+                                <select
+                                    id="add-Category"
+                                    name="Category" // Matches state key
+                                    value={newFoodItem.Category}
+                                    onChange={handleNewFoodInputChange}
+                                    required
+                                >
+                                    {/* Ensure these values match the backend FoodCategory Enum */}
+                                    <option value="Snack">Snack</option>
+									<option value="Dinner">Milk</option>
+                                    <option value="Drink">Drink</option>
+                                    {/* Add other categories from your Enum if needed */}
+                                </select>
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label htmlFor="add-url">Image URL (optional)</label>
+                                <input
+                                    type="url"
+                                    id="add-url"
+                                    name="url" // Matches state key
+                                    value={newFoodItem.url}
+                                    onChange={handleNewFoodInputChange}
+                                />
+                            </div>
+                            {/* is_available checkbox removed, using Stock input now */}
+                            <div className={styles.modalActions}>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddModal(false)}
+                                >
+                                    Cancel
+                                </button>
+                                <button type="submit">Create Food Item</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Food Item Modal */}
+            {showEditModal && editingFoodItem && (
+                <div className={styles.modalBackdrop}>
+                    <div className={styles.modal}>
+                        <h3>Edit Food Item (ID: {editingFoodItem.FoodID})</h3>
+                        <form onSubmit={handleEditSubmit}>
+                            {/* FoodID is not editable */}
+                            <div className={styles.formGroup}>
+                                <label htmlFor="edit-Name">Name</label>
+                                <input
+                                    type="text"
+                                    id="edit-Name"
+                                    name="Name" // Matches state key
+                                    value={editFormData.Name || ''}
+                                    onChange={handleEditInputChange}
+                                    maxLength={255}
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label htmlFor="edit-Price">Price (VND)</label>
+                                <input
+                                    type="number"
+                                    id="edit-Price"
+                                    name="Price" // Matches state key
+                                    step="0.01"
+                                    min="0"
+                                    value={editFormData.Price || '0.00'}
+                                    onChange={handleEditInputChange}
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label htmlFor="edit-Stock">Stock</label>
+                                <input
+                                    type="number"
+                                    id="edit-Stock"
+                                    name="Stock" // Matches state key
+                                    min="0"
+                                    step="1"
+                                    value={editFormData.Stock || '0'}
+                                    onChange={handleEditInputChange}
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label htmlFor="edit-Category">Category</label>
+                                <select
+                                    id="edit-Category"
+                                    name="Category" // Matches state key
+                                    value={editFormData.Category || ''}
+                                    onChange={handleEditInputChange}
+                                >
+                                    {/* Ensure these values match the backend FoodCategory Enum */}
+                                    <option value="">Select a category</option>
+                                    <option value="Snack">Snack</option>
+									<option value="Dinner">Milk</option>
+                                    <option value="Drink">Drink</option>
+                                     {/* Add other categories from your Enum if needed */}
+                                </select>
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label htmlFor="edit-url">Image URL</label>
+                                <input
+                                    type="url"
+                                    id="edit-url"
+                                    name="url" // Matches state key
+                                    value={editFormData.url || ''}
+                                    onChange={handleEditInputChange}
+                                />
+                            </div>
+                            <div className={styles.modalActions}>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEditModal(false)}
+                                >
+                                    Cancel
+                                </button>
+                                <button type="submit">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 };
 
 export default FoodList;

@@ -6,210 +6,218 @@ import { createApiClient } from "@/utils/api";
 import styles from "@/styles/Admin.module.css";
 import { useAuth } from '@/context/AuthContext';
 
+// Updated interface to match backend's EnrollmentDetailResponse
 interface Enrollment {
-	id: number;
-	user_id: number;
-	username: string;
-	session_id: number;
-	session_title: string;
-	enrollment_date: string;
-	status: "active" | "completed" | "cancelled";
+    CustomerID: number;
+    SessionID: number;
+    CustomerName?: string | null; // Optional as per backend model
+    SessionDetails?: string | null; // Optional as per backend model
+    // Removed: id, user_id, username, session_id, session_title, enrollment_date, status
 }
 
 const EnrollmentList: React.FC = () => {
-	const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-	const [showAddModal, setShowAddModal] = useState(false);
-	const [newEnrollment, setNewEnrollment] = useState({
-		user_id: "",
-		session_id: "",
-	});
+    const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [showAddModal, setShowAddModal] = useState(false);
+    // Updated state to match backend request model
+    const [newEnrollment, setNewEnrollment] = useState({
+        CustomerID: "",
+        SessionID: "",
+    });
 
-	// Get token from your auth context or localStorage
-	const { token } = useAuth();
-	const api = createApiClient(token);
+    // Get token from your auth context or localStorage
+    const { token } = useAuth();
+    const api = createApiClient(token); // Assumes createApiClient sets the auth header
 
-	useEffect(() => {
-		fetchEnrollments();
-	}, []);
+    useEffect(() => {
+        fetchEnrollments();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Dependency array includes api if it can change, otherwise leave empty
 
-	const fetchEnrollments = async () => {
-		setLoading(true);
-		try {
-			const response = await api.get("/admin/enrollments/");
-			setEnrollments(response.data);
-			setError(null);
-		} catch (err) {
-			console.error("Error fetching enrollments:", err);
-			setError("Failed to load enrollments. Please try again.");
-		} finally {
-			setLoading(false);
-		}
-	};
+    const fetchEnrollments = async () => {
+        setLoading(true);
+        try {
+            // GET path matches backend
+            const response = await api.get("/admin/enrollments/");
+            // Assuming response.data directly contains the array of enrollments
+            setEnrollments(response.data);
+            setError(null);
+        } catch (err: any) {
+            console.error("Error fetching enrollments:", err);
+            const errorMsg = err.response?.data?.detail || "Failed to load enrollments. Please try again.";
+            setError(errorMsg);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-	const handleCreateEnrollment = async (e: React.FormEvent) => {
-		e.preventDefault();
-		try {
-			await api.post("/admin/enrollments/", {
-				user_id: parseInt(newEnrollment.user_id),
-				session_id: parseInt(newEnrollment.session_id),
-			});
-			setShowAddModal(false);
-			setNewEnrollment({
-				user_id: "",
-				session_id: "",
-			});
-			fetchEnrollments();
-		} catch (err) {
-			console.error("Error creating enrollment:", err);
-			alert("Failed to create enrollment. Please try again.");
-		}
-	};
+    const handleCreateEnrollment = async (e: React.FormEvent) => {
+        e.preventDefault();
+        // Basic validation for numeric input
+        if (isNaN(parseInt(newEnrollment.CustomerID)) || isNaN(parseInt(newEnrollment.SessionID))) {
+            alert("Customer ID and Session ID must be valid numbers.");
+            return;
+        }
 
-	const handleDeleteEnrollment = async (enrollmentId: number) => {
-		if (
-			window.confirm("Are you sure you want to delete this enrollment?")
-		) {
-			try {
-				await api.delete(`/admin/enrollments/`, {
-					data: { enrollment_id: enrollmentId },
-				});
-				fetchEnrollments();
-			} catch (err) {
-				console.error("Error deleting enrollment:", err);
-				alert("Failed to delete enrollment. Please try again.");
-			}
-		}
-	};
+        try {
+            // POST path and body match backend
+            await api.post("/admin/enrollments/", {
+                CustomerID: parseInt(newEnrollment.CustomerID),
+                SessionID: parseInt(newEnrollment.SessionID),
+            });
+            setShowAddModal(false);
+            // Reset state with correct field names
+            setNewEnrollment({
+                CustomerID: "",
+                SessionID: "",
+            });
+            fetchEnrollments(); // Refresh the list
+        } catch (err: any) {
+            console.error("Error creating enrollment:", err);
+            const errorMsg = err.response?.data?.detail || "Failed to create enrollment. Please try again.";
+            alert(`Failed to create enrollment: ${errorMsg}`);
+        }
+    };
 
-	if (loading)
-		return (
-			<div className={styles.loadingIndicator}>
-				Loading enrollments...
-			</div>
-		);
-	if (error) return <div className={styles.error}>{error}</div>;
+    // Updated function signature and API call for delete
+    const handleDeleteEnrollment = async (customerId: number, sessionId: number) => {
+        if (
+            window.confirm(`Are you sure you want to delete the enrollment for Customer ID ${customerId} in Session ID ${sessionId}?`)
+        ) {
+            try {
+                // DELETE path and body match backend
+                await api.delete(`/admin/enrollments/`, {
+                    data: { CustomerID: customerId, SessionID: sessionId },
+                });
+                fetchEnrollments(); // Refresh the list
+            } catch (err: any) {
+                console.error("Error deleting enrollment:", err);
+                const errorMsg = err.response?.data?.detail || "Failed to delete enrollment. Please try again.";
+                alert(`Failed to delete enrollment: ${errorMsg}`);
+            }
+        }
+    };
 
-	return (
-		<div className={styles.listContainer}>
-			<div className={styles.listHeader}>
-				<h2>Enrollment Management</h2>
-				<button
-					className={styles.addButton}
-					onClick={() => setShowAddModal(true)}
-				>
-					Add New Enrollment
-				</button>
-			</div>
+    if (loading)
+        return (
+            <div className={styles.loadingIndicator}>
+                Loading enrollments...
+            </div>
+        );
+    if (error) return <div className={styles.error}>{error}</div>;
 
-			<table className={styles.dataTable}>
-				<thead>
-					<tr>
-						<th>ID</th>
-						<th>User</th>
-						<th>Training Session</th>
-						<th>Enrollment Date</th>
-						<th>Status</th>
-						<th>Actions</th>
-					</tr>
-				</thead>
-				<tbody>
-					{enrollments.map((enrollment) => (
-						<tr key={enrollment.id}>
-							<td>{enrollment.id}</td>
-							<td>
-								{enrollment.username} (ID: {enrollment.user_id})
-							</td>
-							<td>
-								{enrollment.session_title} (ID:{" "}
-								{enrollment.session_id})
-							</td>
-							<td>
-								{new Date(
-									enrollment.enrollment_date
-								).toLocaleDateString()}
-							</td>
-							<td>
-								<span
-									className={`${styles.statusBadge} ${
-										styles[enrollment.status]
-									}`}
-								>
-									{enrollment.status.charAt(0).toUpperCase() +
-										enrollment.status.slice(1)}
-								</span>
-							</td>
-							<td>
-								<button
-									className={`${styles.actionButton} ${styles.deleteButton}`}
-									onClick={() =>
-										handleDeleteEnrollment(enrollment.id)
-									}
-								>
-									Delete
-								</button>
-							</td>
-						</tr>
-					))}
-				</tbody>
-			</table>
+    return (
+        <div className={styles.listContainer}>
+            <div className={styles.listHeader}>
+                <h2>Enrollment Management</h2>
+                <button
+                    className={styles.addButton}
+                    onClick={() => setShowAddModal(true)}
+                >
+                    Add New Enrollment
+                </button>
+            </div>
 
-			{enrollments.length === 0 && !loading && (
-				<div className={styles.emptyMessage}>No enrollments found.</div>
-			)}
+            {/* Updated Table Structure */}
+            <table className={styles.dataTable}>
+                <thead>
+                    <tr>
+                        <th>Customer ID</th>
+                        <th>Customer Name</th>
+                        <th>Session ID</th>
+                        <th>Session Details</th>
+                        {/* Removed Enrollment Date and Status */}
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {enrollments.map((enrollment) => (
+                        // Use composite key
+                        <tr key={`${enrollment.CustomerID}-${enrollment.SessionID}`}>
+                            <td>{enrollment.CustomerID}</td>
+                            <td>{enrollment.CustomerName ?? 'N/A'}</td> {/* Handle optional field */}
+                            <td>{enrollment.SessionID}</td>
+                            <td>{enrollment.SessionDetails ?? 'N/A'}</td> {/* Handle optional field */}
+                            {/* Removed date and status cells */}
+                            <td>
+                                <button
+                                    className={`${styles.actionButton} ${styles.deleteButton}`}
+                                    // Pass CustomerID and SessionID to delete handler
+                                    onClick={() =>
+                                        handleDeleteEnrollment(enrollment.CustomerID, enrollment.SessionID)
+                                    }
+                                >
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
 
-			{/* Add Enrollment Modal */}
-			{showAddModal && (
-				<div className={styles.modalBackdrop}>
-					<div className={styles.modal}>
-						<h3>Add New Enrollment</h3>
-						<form onSubmit={handleCreateEnrollment}>
-							<div className={styles.formGroup}>
-								<label htmlFor="user_id">User ID</label>
-								<input
-									type="number"
-									id="user_id"
-									value={newEnrollment.user_id}
-									onChange={(e) =>
-										setNewEnrollment({
-											...newEnrollment,
-											user_id: e.target.value,
-										})
-									}
-									required
-								/>
-							</div>
-							<div className={styles.formGroup}>
-								<label htmlFor="session_id">Session ID</label>
-								<input
-									type="number"
-									id="session_id"
-									value={newEnrollment.session_id}
-									onChange={(e) =>
-										setNewEnrollment({
-											...newEnrollment,
-											session_id: e.target.value,
-										})
-									}
-									required
-								/>
-							</div>
-							<div className={styles.modalActions}>
-								<button
-									type="button"
-									onClick={() => setShowAddModal(false)}
-								>
-									Cancel
-								</button>
-								<button type="submit">Create Enrollment</button>
-							</div>
-						</form>
-					</div>
-				</div>
-			)}
-		</div>
-	);
+            {enrollments.length === 0 && !loading && (
+                <div className={styles.emptyMessage}>No enrollments found.</div>
+            )}
+
+            {/* Add Enrollment Modal - Updated Form */}
+            {showAddModal && (
+                <div className={styles.modalBackdrop}>
+                    <div className={styles.modal}>
+                        <h3>Add New Enrollment</h3>
+                        <form onSubmit={handleCreateEnrollment}>
+                            {/* Updated Customer ID input */}
+                            <div className={styles.formGroup}>
+                                <label htmlFor="CustomerID">Customer ID</label>
+                                <input
+                                    type="number"
+                                    id="CustomerID"
+                                    value={newEnrollment.CustomerID}
+                                    onChange={(e) =>
+                                        setNewEnrollment({
+                                            ...newEnrollment,
+                                            CustomerID: e.target.value,
+                                        })
+                                    }
+                                    required
+                                    min="1"
+                                />
+                            </div>
+                            {/* Updated Session ID input */}
+                            <div className={styles.formGroup}>
+                                <label htmlFor="SessionID">Session ID</label>
+                                <input
+                                    type="number"
+                                    id="SessionID"
+                                    value={newEnrollment.SessionID}
+                                    onChange={(e) =>
+                                        setNewEnrollment({
+                                            ...newEnrollment,
+                                            SessionID: e.target.value,
+                                        })
+                                    }
+                                    required
+                                    min="1"
+                                />
+                            </div>
+                            <div className={styles.modalActions}>
+                                <button
+                                    type="button"
+                                    className={styles.cancelButton} // Assuming a style for cancel
+                                    onClick={() => setShowAddModal(false)}
+                                >
+                                    Cancel
+                                </button>
+                                <button type="submit" className={styles.confirmButton}> {/* Assuming a style for confirm */}
+                                    Create Enrollment
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 };
 
 export default EnrollmentList;

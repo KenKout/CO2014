@@ -6,360 +6,491 @@ import { createApiClient } from "@/utils/api";
 import styles from "@/styles/Admin.module.css";
 import { useAuth } from '@/context/AuthContext';
 
+// Define EquipmentType enum matching the backend
+type EquipmentType = 'Racket' | 'Shuttlecock' | 'Shoes';
+
+// 1. CHANGE: Update Interface to match Backend Response (AdminEquipmentResponse)
 interface Equipment {
-	id: number;
-	name: string;
-	description: string;
-	category: string;
-	status: "available" | "in-use" | "maintenance" | "out-of-order";
-	location: string;
-	purchase_date: string;
-	last_maintenance_date?: string;
+    EquipmentID: number;
+    Name: string;
+    Type: EquipmentType;
+    Brand?: string | null; // Allow null if backend might return null
+    Price: number;
+    Stock: number;
+    url?: string | null;   // Allow null
 }
 
+// Define structure for creating equipment, matching AdminEquipmentCreateRequest
+interface NewEquipmentData {
+    EquipmentID: string; // Input as string initially, parse to number on submit
+    Name: string;
+    Type: EquipmentType | ''; // Allow empty string for initial select state
+    Brand?: string;
+    Price: string; // Input as string
+    Stock: string; // Input as string
+    url?: string;
+}
+
+// Define structure for updating equipment, matching AdminEquipmentUpdateRequest
+interface UpdateEquipmentData {
+    Name?: string;
+    Type?: EquipmentType;
+    Brand?: string | null;
+    Price?: number;
+    Stock?: number;
+    url?: string | null;
+}
+
+
 const EquipmentList: React.FC = () => {
-	const [equipment, setEquipment] = useState<Equipment[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-	const [showAddModal, setShowAddModal] = useState(false);
-	const [newEquipment, setNewEquipment] = useState({
-		name: "",
-		description: "",
-		category: "",
-		status: "available",
-		location: "",
-		purchase_date: "",
-		last_maintenance_date: "",
-	});
+    const [equipment, setEquipment] = useState<Equipment[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
 
-	// Get token from your auth context or localStorage
-	const { token } = useAuth();
-	const api = createApiClient(token);
+    // 2. CHANGE: Update newEquipment state to match backend create request
+    const [newEquipmentData, setNewEquipmentData] = useState<NewEquipmentData>({
+        EquipmentID: "",
+        Name: "",
+        Type: "", // Default to empty, force selection
+        Brand: "",
+        Price: "",
+        Stock: "",
+        url: "",
+    });
 
-	useEffect(() => {
-		fetchEquipment();
-	}, []);
+    const { token } = useAuth();
+    const api = createApiClient(token);
 
-	const fetchEquipment = async () => {
-		setLoading(true);
-		try {
-			const response = await api.get("/admin/equipment/");
-			setEquipment(response.data);
-			setError(null);
-		} catch (err) {
-			console.error("Error fetching equipment:", err);
-			setError("Failed to load equipment. Please try again.");
-		} finally {
-			setLoading(false);
-		}
-	};
+    useEffect(() => {
+        fetchEquipment();
+    }, []);
 
-	const handleCreateEquipment = async (e: React.FormEvent) => {
-		e.preventDefault();
-		try {
-			await api.post("/admin/equipment/", newEquipment);
-			setShowAddModal(false);
-			setNewEquipment({
-				name: "",
-				description: "",
-				category: "",
-				status: "available",
-				location: "",
-				purchase_date: "",
-				last_maintenance_date: "",
-			});
-			fetchEquipment();
-		} catch (err) {
-			console.error("Error creating equipment:", err);
-			alert("Failed to create equipment. Please try again.");
-		}
-	};
+    const fetchEquipment = async () => {
+        setLoading(true);
+        try {
+            // GET /admin/equipment/ (No change needed here, API call is correct)
+            const response = await api.get("/admin/equipment/");
+            // Ensure response structure matches expected { data: [...] } if your api client wraps it
+            // If api.get directly returns the array, use: setEquipment(response.data);
+            // Assuming api.get returns { data: [...] } based on original code pattern
+            if (response.data && Array.isArray(response.data)) {
+                 setEquipment(response.data);
+            } else if (Array.isArray(response)) {
+                 // Handle cases where api client returns the array directly
+                 setEquipment(response);
+            }
+             else {
+                console.error("Unexpected response structure:", response);
+                setError("Failed to parse equipment data.");
+                setEquipment([]); // Set to empty array on unexpected structure
+            }
+            setError(null);
+        } catch (err: any) {
+            console.error("Error fetching equipment:", err);
+            setError(`Failed to load equipment: ${err?.response?.data?.detail || err.message || 'Please try again.'}`);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-	const handleUpdateEquipment = async (equipmentId: number, data: any) => {
-		try {
-			await api.put(`/admin/equipment/${equipmentId}`, data);
-			fetchEquipment();
-		} catch (err) {
-			console.error("Error updating equipment:", err);
-			alert("Failed to update equipment. Please try again.");
-		}
-	};
+    // 3. CHANGE: Update Create handler to send correct payload
+    const handleCreateEquipment = async (e: React.FormEvent) => {
+        e.preventDefault();
 
-	const handleDeleteEquipment = async (equipmentId: number) => {
-		if (window.confirm("Are you sure you want to delete this equipment?")) {
-			try {
-				await api.delete(`/admin/equipment/${equipmentId}`);
-				fetchEquipment();
-			} catch (err) {
-				console.error("Error deleting equipment:", err);
-				alert("Failed to delete equipment. Please try again.");
-			}
-		}
-	};
+        // Basic validation
+        if (!newEquipmentData.Type) {
+            alert("Please select an equipment type.");
+            return;
+        }
+         if (isNaN(parseInt(newEquipmentData.EquipmentID, 10))) {
+            alert("Equipment ID must be a number.");
+            return;
+        }
+        if (isNaN(parseInt(newEquipmentData.Price, 10))) {
+            alert("Price must be a number.");
+            return;
+        }
+         if (isNaN(parseInt(newEquipmentData.Stock, 10))) {
+            alert("Stock must be a number.");
+            return;
+        }
 
-	if (loading)
-		return (
-			<div className={styles.loadingIndicator}>Loading equipment...</div>
-		);
-	if (error) return <div className={styles.error}>{error}</div>;
 
-	return (
-		<div className={styles.listContainer}>
-			<div className={styles.listHeader}>
-				<h2>Equipment Management</h2>
-				<button
-					className={styles.addButton}
-					onClick={() => setShowAddModal(true)}
-				>
-					Add New Equipment
-				</button>
-			</div>
+        const payload = {
+            EquipmentID: parseInt(newEquipmentData.EquipmentID, 10),
+            Name: newEquipmentData.Name,
+            Type: newEquipmentData.Type,
+            Brand: newEquipmentData.Brand || null, // Send null if empty
+            Price: parseInt(newEquipmentData.Price, 10),
+            Stock: parseInt(newEquipmentData.Stock, 10),
+            url: newEquipmentData.url || null, // Send null if empty
+        };
 
-			<table className={styles.dataTable}>
-				<thead>
-					<tr>
-						<th>ID</th>
-						<th>Name</th>
-						<th>Category</th>
-						<th>Location</th>
-						<th>Status</th>
-						<th>Purchase Date</th>
-						<th>Last Maintenance</th>
-						<th>Actions</th>
-					</tr>
-				</thead>
-				<tbody>
-					{equipment.map((item) => (
-						<tr key={item.id}>
-							<td>{item.id}</td>
-							<td>
-								{item.name}
-								<div className={styles.itemDescription}>
-									{item.description}
-								</div>
-							</td>
-							<td>{item.category}</td>
-							<td>{item.location}</td>
-							<td>
-								<span
-									className={`${styles.statusBadge} ${
-										styles[item.status]
-									}`}
-								>
-									{item.status
-										.replace(/-/g, " ")
-										.replace(/\b\w/g, (l) =>
-											l.toUpperCase()
-										)}
-								</span>
-							</td>
-							<td>
-								{new Date(
-									item.purchase_date
-								).toLocaleDateString()}
-							</td>
-							<td>
-								{item.last_maintenance_date
-									? new Date(
-											item.last_maintenance_date
-									  ).toLocaleDateString()
-									: "Never"}
-							</td>
-							<td>
-								<select
-									className={styles.statusSelect}
-									value={item.status}
-									onChange={(e) =>
-										handleUpdateEquipment(item.id, {
-											status: e.target.value,
-										})
-									}
-								>
-									<option value="available">Available</option>
-									<option value="in-use">In Use</option>
-									<option value="maintenance">
-										Maintenance
-									</option>
-									<option value="out-of-order">
-										Out of Order
-									</option>
-								</select>
-								<button
-									className={styles.actionButton}
-									onClick={() => {
-										const today = new Date()
-											.toISOString()
-											.split("T")[0];
-										handleUpdateEquipment(item.id, {
-											last_maintenance_date: today,
-										});
-									}}
-								>
-									Mark Maintained
-								</button>
-								<button
-									className={`${styles.actionButton} ${styles.deleteButton}`}
-									onClick={() =>
-										handleDeleteEquipment(item.id)
-									}
-								>
-									Delete
-								</button>
-							</td>
-						</tr>
-					))}
-				</tbody>
-			</table>
+        try {
+            // POST /admin/equipment/ with AdminEquipmentCreateRequest payload
+            await api.post("/admin/equipment/", payload);
+            setShowAddModal(false);
+            setNewEquipmentData({ // Reset form
+                EquipmentID: "", Name: "", Type: "", Brand: "", Price: "", Stock: "", url: "",
+            });
+            fetchEquipment(); // Refresh list
+        } catch (err: any) {
+            console.error("Error creating equipment:", err);
+            alert(`Failed to create equipment: ${err?.response?.data?.detail || err.message || 'Please try again.'}`);
+        }
+    };
 
-			{equipment.length === 0 && !loading && (
-				<div className={styles.emptyMessage}>No equipment found.</div>
-			)}
+     // 4. ADD: Function to open Edit Modal and fetch current data (using currently unused GET /id)
+    const handleEditClick = async (item: Equipment) => {
+        setLoading(true); // Show loading indicator while fetching details
+        setError(null);
+        try {
+             // GET /admin/equipment/{id} - Using the endpoint not previously used by FE
+            const response = await api.get(`/admin/equipment/${item.EquipmentID}`);
+             // Assuming response.data is the Equipment object
+             setEditingEquipment(response.data);
+             setShowEditModal(true);
+        } catch (err: any) {
+             console.error("Error fetching equipment details for edit:", err);
+            setError(`Failed to load equipment details: ${err?.response?.data?.detail || err.message || 'Please try again.'}`);
+            setEditingEquipment(null); // Clear editing state on error
+        } finally {
+            setLoading(false);
+        }
 
-			{/* Add Equipment Modal */}
-			{showAddModal && (
-				<div className={styles.modalBackdrop}>
-					<div className={styles.modal}>
-						<h3>Add New Equipment</h3>
-						<form onSubmit={handleCreateEquipment}>
-							<div className={styles.formGroup}>
-								<label htmlFor="name">Name</label>
-								<input
-									type="text"
-									id="name"
-									value={newEquipment.name}
-									onChange={(e) =>
-										setNewEquipment({
-											...newEquipment,
-											name: e.target.value,
-										})
-									}
-									required
-								/>
-							</div>
-							<div className={styles.formGroup}>
-								<label htmlFor="description">Description</label>
-								<textarea
-									id="description"
-									value={newEquipment.description}
-									onChange={(e) =>
-										setNewEquipment({
-											...newEquipment,
-											description: e.target.value,
-										})
-									}
-									required
-								/>
-							</div>
-							<div className={styles.formGroup}>
-								<label htmlFor="category">Category</label>
-								<select
-									id="category"
-									value={newEquipment.category}
-									onChange={(e) =>
-										setNewEquipment({
-											...newEquipment,
-											category: e.target.value,
-										})
-									}
-									required
-								>
-									<option value="">Select a category</option>
-									<option value="Cardio">Cardio</option>
-									<option value="Strength">Strength</option>
-									<option value="Weights">Weights</option>
-									<option value="Accessories">
-										Accessories
-									</option>
-									<option value="Machines">Machines</option>
-								</select>
-							</div>
-							<div className={styles.formGroup}>
-								<label htmlFor="status">Status</label>
-								<select
-									id="status"
-									value={newEquipment.status}
-									onChange={(e) =>
-										setNewEquipment({
-											...newEquipment,
-											status: e.target.value as any,
-										})
-									}
-									required
-								>
-									<option value="available">Available</option>
-									<option value="in-use">In Use</option>
-									<option value="maintenance">
-										Maintenance
-									</option>
-									<option value="out-of-order">
-										Out of Order
-									</option>
-								</select>
-							</div>
-							<div className={styles.formGroup}>
-								<label htmlFor="location">Location</label>
-								<input
-									type="text"
-									id="location"
-									value={newEquipment.location}
-									onChange={(e) =>
-										setNewEquipment({
-											...newEquipment,
-											location: e.target.value,
-										})
-									}
-									required
-								/>
-							</div>
-							<div className={styles.formGroup}>
-								<label htmlFor="purchase_date">
-									Purchase Date
-								</label>
-								<input
-									type="date"
-									id="purchase_date"
-									value={newEquipment.purchase_date}
-									onChange={(e) =>
-										setNewEquipment({
-											...newEquipment,
-											purchase_date: e.target.value,
-										})
-									}
-									required
-								/>
-							</div>
-							<div className={styles.formGroup}>
-								<label htmlFor="last_maintenance_date">
-									Last Maintenance Date (optional)
-								</label>
-								<input
-									type="date"
-									id="last_maintenance_date"
-									value={newEquipment.last_maintenance_date}
-									onChange={(e) =>
-										setNewEquipment({
-											...newEquipment,
-											last_maintenance_date:
-												e.target.value,
-										})
-									}
-								/>
-							</div>
-							<div className={styles.modalActions}>
-								<button
-									type="button"
-									onClick={() => setShowAddModal(false)}
-								>
-									Cancel
-								</button>
-								<button type="submit">Create Equipment</button>
-							</div>
-						</form>
-					</div>
-				</div>
-			)}
-		</div>
-	);
+    };
+
+    // 5. CHANGE/ADD: Update handler for submitting edits
+    const handleUpdateEquipment = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingEquipment) return;
+
+        // Prepare payload matching AdminEquipmentUpdateRequest
+        // Send only changed fields (though sending all is also acceptable if backend handles it)
+        const updatePayload: UpdateEquipmentData = {
+            Name: editingEquipment.Name,
+            Type: editingEquipment.Type,
+            Brand: editingEquipment.Brand || null,
+            Price: editingEquipment.Price,
+            Stock: editingEquipment.Stock,
+            url: editingEquipment.url || null,
+        };
+
+        // Basic validation for numeric fields in edit form
+        if (isNaN(Number(updatePayload.Price))) {
+             alert("Price must be a number.");
+             return;
+         }
+          if (isNaN(Number(updatePayload.Stock))) {
+             alert("Stock must be a number.");
+             return;
+         }
+         // Convert valid numeric strings back to numbers
+         updatePayload.Price = Number(updatePayload.Price);
+         updatePayload.Stock = Number(updatePayload.Stock);
+
+
+        try {
+            // PUT /admin/equipment/{id} with AdminEquipmentUpdateRequest payload
+            await api.put(`/admin/equipment/${editingEquipment.EquipmentID}`, updatePayload);
+            setShowEditModal(false);
+            setEditingEquipment(null);
+            fetchEquipment(); // Refresh list
+        } catch (err: any) {
+            console.error("Error updating equipment:", err);
+            alert(`Failed to update equipment: ${err?.response?.data?.detail || err.message || 'Please try again.'}`);
+        }
+    };
+
+    // 6. CHANGE: Update Delete handler to use correct ID field
+    const handleDeleteEquipment = async (equipmentId: number) => {
+        if (window.confirm(`Are you sure you want to delete equipment ID ${equipmentId}?`)) {
+            try {
+                // DELETE /admin/equipment/{id} (No change needed here, API call is correct)
+                await api.delete(`/admin/equipment/${equipmentId}`);
+                fetchEquipment(); // Refresh list
+            } catch (err: any) {
+                console.error("Error deleting equipment:", err);
+                alert(`Failed to delete equipment: ${err?.response?.data?.detail || err.message || 'Please try again.'}`);
+            }
+        }
+    };
+
+    // Helper function to handle input changes in the edit modal
+    const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        if (!editingEquipment) return;
+        const { name, value } = e.target;
+        setEditingEquipment({
+            ...editingEquipment,
+            [name]: value, // Keep as string temporarily for input fields
+        });
+    };
+
+
+    if (loading && !showEditModal) // Don't show main loading if edit modal is loading its own data
+        return (
+            <div className={styles.loadingIndicator}>Loading equipment...</div>
+        );
+    if (error) return <div className={styles.error}>{error}</div>;
+
+    return (
+        <div className={styles.listContainer}>
+            <div className={styles.listHeader}>
+                <h2>Equipment Management</h2>
+                <button
+                    className={styles.addButton}
+                    onClick={() => {
+                        setNewEquipmentData({ EquipmentID: "", Name: "", Type: "", Brand: "", Price: "", Stock: "", url: "" }); // Reset form state
+                        setShowAddModal(true);
+                    }}
+                >
+                    Add New Equipment
+                </button>
+            </div>
+
+            {/* 7. CHANGE: Update Table Headers and Data Cells */}
+            <table className={styles.dataTable}>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Brand</th>
+                        <th>Price (VND)</th>
+                        <th>Stock</th>
+                        <th>Image URL</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {equipment.map((item) => (
+                        <tr key={item.EquipmentID}>
+                            <td>{item.EquipmentID}</td>
+                            <td>{item.Name}</td>
+                            <td>{item.Type}</td>
+                            <td>{item.Brand || 'N/A'}</td>
+                            <td>{item.Price}</td>
+                            <td>{item.Stock}</td>
+                            <td>{item.url ? <a href={String(item.url)} target="_blank" rel="noopener noreferrer">Link</a> : 'No URL'}</td>
+                            <td>
+                                {/* Add Edit Button */}
+                                <button
+                                    className={styles.actionButton}
+                                    onClick={() => handleEditClick(item)}
+                                >
+                                    Edit
+                                </button>
+                                <button
+                                    className={`${styles.actionButton} ${styles.deleteButton}`}
+                                    onClick={() => handleDeleteEquipment(item.EquipmentID)} // Use correct ID
+                                >
+                                    Delete
+                                </button>
+                                {/* Remove status dropdown and Mark Maintained button as they don't match BE */}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+
+            {equipment.length === 0 && !loading && (
+                <div className={styles.emptyMessage}>No equipment found.</div>
+            )}
+
+            {/* 8. CHANGE: Update Add Equipment Modal Form Fields */}
+            {showAddModal && (
+                <div className={styles.modalBackdrop}>
+                    <div className={styles.modal}>
+                        <h3>Add New Equipment</h3>
+                        <form onSubmit={handleCreateEquipment}>
+                            {/* Add EquipmentID field as it's required by backend */}
+                             <div className={styles.formGroup}>
+                                <label htmlFor="add-equipmentId">Equipment ID</label>
+                                <input
+                                    type="number"
+                                    id="add-equipmentId"
+                                    value={newEquipmentData.EquipmentID}
+                                    onChange={(e) => setNewEquipmentData({ ...newEquipmentData, EquipmentID: e.target.value })}
+                                    required
+                                    min="1" // Assuming positive IDs
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label htmlFor="add-name">Name</label>
+                                <input
+                                    type="text"
+                                    id="add-name"
+                                    value={newEquipmentData.Name}
+                                    onChange={(e) => setNewEquipmentData({ ...newEquipmentData, Name: e.target.value })}
+                                    required
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label htmlFor="add-type">Type</label>
+                                <select
+                                    id="add-type"
+                                    value={newEquipmentData.Type}
+                                    onChange={(e) => setNewEquipmentData({ ...newEquipmentData, Type: e.target.value as EquipmentType })}
+                                    required
+                                >
+                                    <option value="" disabled>Select Type</option>
+                                    <option value="Racket">Racket</option>
+                                    <option value="Shuttlecock">Shuttlecock</option>
+                                    <option value="Shoes">Shoes</option>
+                                </select>
+                            </div>
+                             <div className={styles.formGroup}>
+                                <label htmlFor="add-brand">Brand (Optional)</label>
+                                <input
+                                    type="text"
+                                    id="add-brand"
+                                    value={newEquipmentData.Brand}
+                                    onChange={(e) => setNewEquipmentData({ ...newEquipmentData, Brand: e.target.value })}
+                                />
+                            </div>
+                             <div className={styles.formGroup}>
+                                <label htmlFor="add-price">Price (VND)</label>
+                                <input
+                                    type="number"
+                                    id="add-price"
+                                    value={newEquipmentData.Price}
+                                     min="0"
+                                     step="1" // Assuming integer price based on BE model
+                                    onChange={(e) => setNewEquipmentData({ ...newEquipmentData, Price: e.target.value })}
+                                    required
+                                />
+                            </div>
+                             <div className={styles.formGroup}>
+                                <label htmlFor="add-stock">Stock</label>
+                                <input
+                                    type="number"
+                                    id="add-stock"
+                                    value={newEquipmentData.Stock}
+                                    min="0"
+                                    step="1"
+                                    onChange={(e) => setNewEquipmentData({ ...newEquipmentData, Stock: e.target.value })}
+                                    required
+                                />
+                            </div>
+                              <div className={styles.formGroup}>
+                                <label htmlFor="add-url">Image URL (Optional)</label>
+                                <input
+                                    type="url"
+                                    id="add-url"
+                                    value={newEquipmentData.url}
+                                    onChange={(e) => setNewEquipmentData({ ...newEquipmentData, url: e.target.value })}
+                                    placeholder="https://example.com/image.jpg"
+                                />
+                            </div>
+
+                            {/* Remove fields not in backend: description, category, status, location, purchase_date, last_maintenance_date */}
+
+                            <div className={styles.modalActions}>
+                                <button type="button" onClick={() => setShowAddModal(false)}>Cancel</button>
+                                <button type="submit">Create Equipment</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+             {/* 9. ADD: Edit Equipment Modal */}
+            {showEditModal && editingEquipment && (
+                <div className={styles.modalBackdrop}>
+                    <div className={styles.modal}>
+                        <h3>Edit Equipment (ID: {editingEquipment.EquipmentID})</h3>
+                         {loading && <div className={styles.loadingIndicator}>Loading details...</div>}
+                         {error && <div className={styles.error}>{error}</div>}
+                        {!loading && !error && (
+                            <form onSubmit={handleUpdateEquipment}>
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="edit-name">Name</label>
+                                    <input
+                                        type="text"
+                                        id="edit-name"
+                                        name="Name" // Name attribute matches the state key
+                                        value={editingEquipment.Name}
+                                        onChange={handleEditInputChange}
+                                        required
+                                    />
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="edit-type">Type</label>
+                                    <select
+                                        id="edit-type"
+                                        name="Type"
+                                        value={editingEquipment.Type}
+                                        onChange={handleEditInputChange}
+                                        required
+                                    >
+                                        {/* No disabled option needed here as it should always have a value */}
+                                        <option value="Racket">Racket</option>
+                                        <option value="Shuttlecock">Shuttlecock</option>
+                                        <option value="Shoes">Shoes</option>
+                                    </select>
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="edit-brand">Brand (Optional)</label>
+                                    <input
+                                        type="text"
+                                        id="edit-brand"
+                                        name="Brand"
+                                        value={editingEquipment.Brand || ''} // Handle null value from backend
+                                        onChange={handleEditInputChange}
+                                    />
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="edit-price">Price (VND)</label>
+                                    <input
+                                        type="number"
+                                        id="edit-price"
+                                        name="Price"
+                                        value={editingEquipment.Price}
+                                        min="0"
+                                        step="1"
+                                        onChange={handleEditInputChange}
+                                        required
+                                    />
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="edit-stock">Stock</label>
+                                    <input
+                                        type="number"
+                                        id="edit-stock"
+                                        name="Stock"
+                                        value={editingEquipment.Stock}
+                                        min="0"
+                                        step="1"
+                                        onChange={handleEditInputChange}
+                                        required
+                                    />
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="edit-url">Image URL (Optional)</label>
+                                    <input
+                                        type="url"
+                                        id="edit-url"
+                                        name="url"
+                                        value={editingEquipment.url || ''} // Handle null value
+                                        onChange={handleEditInputChange}
+                                        placeholder="https://example.com/image.jpg"
+                                    />
+                                </div>
+                                <div className={styles.modalActions}>
+                                    <button type="button" onClick={() => { setShowEditModal(false); setEditingEquipment(null); }}>Cancel</button>
+                                    <button type="submit">Update Equipment</button>
+                                </div>
+                            </form>
+                         )}
+                    </div>
+                </div>
+            )}
+
+        </div>
+    );
 };
 
 export default EquipmentList;
