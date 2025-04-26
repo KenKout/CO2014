@@ -27,13 +27,13 @@ export default function LoginPage() {
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // State for Form Inputs (example for login)
-  const [loginEmail, setLoginEmail] = useState('');
+  const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
 
   // State for Forgot Password flow
-  const [recoveryEmail, setRecoveryEmail] = useState('');
-  const [isRecoveryEmailValid, setIsRecoveryEmailValid] = useState(true);
+  const [recoveryUsername, setRecoveryUsername] = useState('');
+  const [isRecoveryUsernameValid, setIsRecoveryUsernameValid] = useState(true);
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [newPasswordStrength, setNewPasswordStrength] = useState({ score: 0, text: 'Password strength' });
@@ -57,9 +57,9 @@ export default function LoginPage() {
     clearAlerts();
     try {
       const apiClient = createApiClient(null);
-      const response = await apiClient.post('/auth/login', { 
-        username: loginEmail, 
-        password: loginPassword 
+      const response = await apiClient.post('/auth/login', {
+        username: loginUsername,
+        password: loginPassword
       });
       
       // Set success message
@@ -112,17 +112,15 @@ export default function LoginPage() {
     setNewPasswordsMatch(newPassword === confirmNewPassword || confirmNewPassword === '');
   }, [newPassword, confirmNewPassword]);
 
-  // Email Validation
-  const validateEmail = (email: string): boolean => {
-    if (!email) return true; // Don't show error for empty field initially
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+  // Username Validation
+  const validateUsername = (username: string): boolean => {
+    return username !== ''; // Basic validation, can be enhanced if needed
   };
-
+  
 
   useEffect(() => {
-    setIsRecoveryEmailValid(validateEmail(recoveryEmail));
-  }, [recoveryEmail]);
+    setIsRecoveryUsernameValid(validateUsername(recoveryUsername));
+  }, [recoveryUsername]);
 
   // --- Forgot Password Modal Logic ---
 
@@ -142,8 +140,8 @@ export default function LoginPage() {
   };
 
   const resetForgotPasswordForm = () => {
-    setRecoveryEmail('');
-    setIsRecoveryEmailValid(true);
+    setRecoveryUsername('');
+    setIsRecoveryUsernameValid(true);
     setOtp(new Array(6).fill(''));
     setNewPassword('');
     setConfirmNewPassword('');
@@ -195,12 +193,12 @@ export default function LoginPage() {
 
   // Send OTP Button Handler
   const handleSendOtp = () => {
-    if (!isRecoveryEmailValid || recoveryEmail === '') {
-        setIsRecoveryEmailValid(false);
+    if (!isRecoveryUsernameValid || recoveryUsername === '') {
+        setIsRecoveryUsernameValid(false);
         // Optionally show an alert
         return;
     }
-    console.log('Sending OTP to:', recoveryEmail);
+    console.log('Sending OTP to:', recoveryUsername);
     // TODO: Implement API call to send OTP
     setModalStep('otp-step');
     startResendTimer();
@@ -212,7 +210,7 @@ export default function LoginPage() {
   // Resend OTP Handler
   const handleResendOtp = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
-    console.log('Resending OTP to:', recoveryEmail);
+    console.log('Resending OTP to:', recoveryUsername);
     // TODO: Implement API call to resend OTP
     setOtp(new Array(6).fill(''));
     setVerificationStatus({ text: '', status: '' });
@@ -361,16 +359,16 @@ export default function LoginPage() {
             )}
             <form id="login-form" onSubmit={handleLoginSubmit}>
               <div className={styles['form-group']}>
-                <label htmlFor="email">Email Address</label>
+                <label htmlFor="username">Username</label>
                 <div className={styles['input-group']}>
-                  <i className="fas fa-envelope"></i>
+                  <i className="fas fa-user"></i>
                   <input
-                    type="email"
-                    id="email"
+                    type="text"
+                    id="username"
                     className={styles['form-control']}
-                    placeholder="Enter your email"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
+                    placeholder="Enter your username"
+                    value={loginUsername}
+                    onChange={(e) => setLoginUsername(e.target.value)}
                     required
                   />
                 </div>
@@ -437,25 +435,25 @@ export default function LoginPage() {
               {modalStep === 'email-step' && (
                 <div className="modal-step" id="email-step">
                   <h2>Forgot Password</h2>
-                  <p>Enter your email address to receive a verification code.</p>
+                  <p>Enter your username to receive a verification code.</p>
                   <div className="form-group">
                     <div className="input-group">
-                      <i className="fas fa-envelope"></i>
+                      <i className="fas fa-user"></i>
                       <input
-                        type="email"
-                        id="recovery-email"
-                        className={`form-control ${recoveryEmail ? (isRecoveryEmailValid ? 'input-valid' : 'input-invalid') : ''}`}
-                        placeholder="Enter your email"
-                        value={recoveryEmail}
-                        onChange={(e) => setRecoveryEmail(e.target.value)}
+                        type="text"
+                        id="recovery-username"
+                        className={`form-control ${recoveryUsername ? (isRecoveryUsernameValid ? 'input-valid' : 'input-invalid') : ''}`}
+                        placeholder="Enter your username"
+                        value={recoveryUsername}
+                        onChange={(e) => setRecoveryUsername(e.target.value)}
                         required
                       />
                     </div>
-                    {!isRecoveryEmailValid && recoveryEmail && (
-                      <div id="recovery-email-feedback" className="validation-feedback invalid-feedback" style={{ display: 'block' }}>Please enter a valid email address.</div>
+                    {!isRecoveryUsernameValid && recoveryUsername && (
+                      <div id="recovery-username-feedback" className="validation-feedback invalid-feedback" style={{ display: 'block' }}>Please enter a valid username.</div>
                     )}
                   </div>
-                  <button type="button" className="login-btn" id="send-otp-btn" onClick={handleSendOtp} disabled={!recoveryEmail || !isRecoveryEmailValid}>
+                  <button type="button" className="login-btn" id="send-otp-btn" onClick={handleSendOtp} disabled={!recoveryUsername || !isRecoveryUsernameValid}>
                       Send Verification Code
                   </button>
                 </div>
@@ -465,7 +463,7 @@ export default function LoginPage() {
               {modalStep === 'otp-step' && (
                 <div className="modal-step" id="otp-step">
                   <h2>Enter Verification Code</h2>
-                  <p>We've sent a verification code to {recoveryEmail}. Please enter it below.</p>
+                  <p>We've sent a verification code to {recoveryUsername}. Please enter it below.</p>
                   <div className="form-group">
                     <div className="otp-container" onPaste={handleOtpPaste}>
                       {otp.map((digit, index) => (

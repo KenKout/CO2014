@@ -8,7 +8,7 @@ import styles from '@/styles/Register.module.css';
 export default function RegisterPage() {
   // State for Form Inputs
   const [fullname, setFullname] = useState('');
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [phone, setPhone] = useState('');
@@ -17,21 +17,19 @@ export default function RegisterPage() {
   // State for validation
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, text: 'Password strength' });
   const [passwordsMatch, setPasswordsMatch] = useState(true);
-  const [isEmailValid, setIsEmailValid] = useState(true);
+  const [isUsernameValid, setIsUsernameValid] = useState(true);
   
   // State for Alerts
   const [alert, setAlert] = useState({ message: '', type: '', visible: false });
 
-  // Email Validation
-  const validateEmail = (email: string): boolean => {
-    if (!email) return true; // Don't show error for empty field initially
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+  // Username Validation
+  const validateUsername = (username: string): boolean => {
+    return username !== ''; // Basic validation, can be enhanced if needed
   };
 
   useEffect(() => {
-    setIsEmailValid(validateEmail(email));
-  }, [email]);
+    setIsUsernameValid(validateUsername(username));
+  }, [username]);
 
   // Password Strength Calculation
   const calculatePasswordStrength = (password: string) => {
@@ -76,8 +74,8 @@ export default function RegisterPage() {
     e.preventDefault();
     clearAlert();
 
-    if (!isEmailValid || email === '') {
-      setAlert({ message: 'Please enter a valid email address.', type: 'error', visible: true });
+    if (!isUsernameValid || username === '') {
+      setAlert({ message: 'Please enter a valid username.', type: 'error', visible: true });
       return;
     }
     if (password.length < 8) {
@@ -96,7 +94,7 @@ export default function RegisterPage() {
     try {
       const apiClient = createApiClient(null);
       const response = await apiClient.post('/auth/register', {
-        username: email,
+        username: username,
         password: password,
         phone: phone,
         name: fullname,
@@ -104,7 +102,7 @@ export default function RegisterPage() {
       if (response.status === 200 || response.status === 201) {
         setAlert({ message: 'Registration successful! You can now log in.', type: 'success', visible: true });
         setFullname('');
-        setEmail('');
+        setUsername('');
         setPassword('');
         setConfirmPassword('');
         setAgreeTerms(false);
@@ -159,21 +157,21 @@ export default function RegisterPage() {
             </div>
 
             <div className={styles['form-group']}>
-              <label htmlFor="email">Email Address</label>
+              <label htmlFor="username">Username</label>
               <div className={styles['input-group']}>
-                <i className="fas fa-envelope"></i>
+                <i className="fas fa-user"></i>
                 <input
-                  type="email"
-                  id="email"
-                  className={`${styles['form-control']} ${email ? (isEmailValid ? styles['input-valid'] : styles['input-invalid']) : ''}`}
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  type="text"
+                  id="username"
+                  className={`${styles['form-control']} ${username ? (isUsernameValid ? styles['input-valid'] : styles['input-invalid']) : ''}`}
+                  placeholder="Enter your username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   required
                 />
               </div>
-              {!isEmailValid && email && (
-                <div className={styles['validation-feedback']} style={{ display: 'block' }}>Please enter a valid email address.</div>
+              {!isUsernameValid && username && (
+                <div className={styles['validation-feedback']} style={{ display: 'block' }}>Please enter a valid username.</div>
               )}
             </div>
 
