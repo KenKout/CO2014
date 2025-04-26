@@ -1,5 +1,7 @@
+// @/context/AuthContext.tsx
 'use client';
 
+import { createApiClient } from '@/utils/api';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -57,15 +59,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchUserData = async (authToken: string) => {
     try {
-      const response = await fetch('/api/auth/profile', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-        },
-      });
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
+      const apiClient = createApiClient(authToken);
+      const response = await apiClient.get('/auth/profile');
+      if (response.status === 200) {
+        setUser(response.data);
       } else {
         console.error('Failed to fetch user data');
         setToken(null); // Clear token if it's invalid
@@ -76,9 +73,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // In AuthContext.tsx, modify the login function:
   const login = (newToken: string) => {
+    // Save to localStorage immediately, not just in the useEffect
+    localStorage.setItem('auth_token', newToken);
     setToken(newToken);
-    router.push('/'); // Redirect to home or dashboard
+    setIsAuthenticated(true);
+    // Don't navigate here - let the component handle navigation
   };
 
   const logout = () => {

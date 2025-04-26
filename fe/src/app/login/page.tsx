@@ -1,3 +1,4 @@
+// @/app/login/page.tsx
 'use client'; // Mark this component as a Client Component
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -50,21 +51,25 @@ export default function LoginPage() {
   };
 
   // Login Form Submission
+  // In LoginPage, update the handleLoginSubmit function:
   const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     clearAlerts();
     try {
       const apiClient = createApiClient(null);
-      const response = await apiClient.post('/auth/login', { username: loginEmail, password: loginPassword });
+      const response = await apiClient.post('/auth/login', { 
+        username: loginEmail, 
+        password: loginPassword 
+      });
       
-      // Use login from context that was defined at the top level
-      login(response.data.access_token);
+      // Set success message
       setLoginAlert({ message: 'Login successful!', type: 'success', visible: true });
       
-      // Use router that was defined at the top level
+      // Wait for the alert to be visible before login and navigation
       setTimeout(() => {
-        router.push('/');
-      }, 2000);
+        login(response.data.access_token);
+        router.push('/'); // Navigate to home page instead of profile
+      }, 1000);
     } catch (error) {
       console.error('Login error:', error);
       const errorMessage = (error as any)?.response?.data?.detail || 'An error occurred during login.';

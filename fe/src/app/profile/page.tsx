@@ -1,19 +1,26 @@
-// app/profile/page.tsx
+// In @/app/profile/page.tsx
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useRouter } from 'next/navigation'; // Add this import
+import { useAuth } from '@/context/AuthContext';
 import styles from '@/styles/Profile.module.css';
 
-const Profile = () => {
+const ProfilePage = () => {
   const { user, isAuthenticated } = useAuth();
+  const router = useRouter(); // Initialize the router hook
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (isAuthenticated !== undefined) {
       setLoading(false);
     }
-  }, [isAuthenticated]);
+    
+    // Redirect if not authenticated
+    if (isAuthenticated === false) {
+      router.push('/login');
+    }
+  }, [isAuthenticated, router]); // Add router to dependency array
 
   if (loading) {
     return <div className={styles.loading}>Loading...</div>;
@@ -56,4 +63,5 @@ const Profile = () => {
   );
 };
 
-export default Profile;
+// For the ProtectedRoute approach, make sure to import useRouter there as well
+export default ProfilePage;
