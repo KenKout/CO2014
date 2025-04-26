@@ -1,36 +1,31 @@
-import { useAuth } from '@/context/AuthContext';
+import axios from 'axios';
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1` : 'http://localhost:8000/v1';
 
-export const createApiClient = () => {
-  const { token } = useAuth();
-
-  const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
-    const headers = {
+export const createApiClient = (token: string | null, logout?: () => void) => {
+  const apiClient = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
       'Content-Type': 'application/json',
       ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-      ...options.headers,
-    };
+    },
+  });
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers,
-    });
-
-    if (response.status === 401) {
-      // Token might be expired or invalid
-      const { logout } = useAuth();
-      logout();
-      throw new Error('Unauthorized: Please log in again.');
+  apiClient.interceptors.response.use(
+    response => response,
+    error => {
+      if (error.response && error.response.status === 401 && logout) {
+        logout();
+        throw new Error('Unauthorized: Please log in again.');
+      }
+      return Promise.reject(error);
     }
-
-    return response;
-  };
+  );
 
   return {
-    get: (endpoint: string, options: RequestInit = {}) => fetchWithAuth(endpoint, { method: 'GET', ...options }),
-    post: (endpoint: string, body: any, options: RequestInit = {}) => fetchWithAuth(endpoint, { method: 'POST', body: JSON.stringify(body), ...options }),
-    put: (endpoint: string, body: any, options: RequestInit = {}) => fetchWithAuth(endpoint, { method: 'PUT', body: JSON.stringify(body), ...options }),
-    delete: (endpoint: string, options: RequestInit = {}) => fetchWithAuth(endpoint, { method: 'DELETE', ...options }),
+    get: (endpoint: string, options: any = {}) => apiClient.get(endpoint, options),
+    post: (endpoint: string, body: any, options: any = {}) => apiClient.post(endpoint, body, options),
+    put: (endpoint: string, body: any, options: any = {}) => apiClient.put(endpoint, body, options),
+    delete: (endpoint: string, options: any = {}) => apiClient.delete(endpoint, options),
   };
 };

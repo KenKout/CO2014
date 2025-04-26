@@ -23,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link href="https://fonts.cdnfonts.com/css/catorze27-style1" rel="stylesheet" />
+        {/* <link href="https://fonts.cdnfonts.com/css/catorze27-style1" rel="stylesheet" /> */}
       </head>
       <body className={urbanist.className}>
         <AuthProvider>

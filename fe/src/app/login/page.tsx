@@ -51,7 +51,7 @@ export default function LoginPage() {
     e.preventDefault();
     clearAlerts();
     try {
-      const apiClient = createApiClient();
+      const apiClient = createApiClient(null);
       const response = await apiClient.post('/auth/login', { username: loginEmail, password: loginPassword });
       if (response.ok) {
         const data = await response.json();

@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [phone, setPhone] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
   
   // State for validation
@@ -93,14 +94,14 @@ export default function RegisterPage() {
     }
 
     try {
-      const apiClient = createApiClient();
+      const apiClient = createApiClient(null);
       const response = await apiClient.post('/auth/register', {
         username: email,
         password: password,
-        phone: '', // You might want to add a phone field to the form if required by backend
+        phone: phone,
         name: fullname,
       });
-      if (response.ok) {
+      if (response.status === 200 || response.status === 201) {
         setAlert({ message: 'Registration successful! You can now log in.', type: 'success', visible: true });
         setFullname('');
         setEmail('');
@@ -114,7 +115,7 @@ export default function RegisterPage() {
           window.location.href = '/login';
         }, 3000);
       } else {
-        const errorData = await response.json();
+        const errorData = response.data;
         setAlert({ message: errorData.detail || 'Registration failed.', type: 'error', visible: true });
       }
     } catch (error) {
@@ -174,6 +175,22 @@ export default function RegisterPage() {
               {!isEmailValid && email && (
                 <div className={styles['validation-feedback']} style={{ display: 'block' }}>Please enter a valid email address.</div>
               )}
+            </div>
+
+            <div className={styles['form-group']}>
+              <label htmlFor="phone">Phone Number</label>
+              <div className={styles['input-group']}>
+                <i className="fas fa-phone"></i>
+                <input
+                  type="tel"
+                  id="phone"
+                  className={styles['form-control']}
+                  placeholder="Enter your phone number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                />
+              </div>
             </div>
 
             <div className={styles['form-group']}>
