@@ -308,3 +308,86 @@ def process_order(
     except Exception as e:
         logger.exception(f"Unexpected error during order validation/calculation for CustomerID {customer_id}: {e}")
         raise HTTPException(status_code=500, detail="An unexpected error occurred before processing the order.")
+# --- Function to Retrieve User Orders ---
+
+def get_user_orders(customer_id: int, db: pymysql.connections.Connection) -> List[Dict[str, Any]]:
+    """
+    Retrieves all orders and their details for a given customer.
+    """
+    orders_list = []
+    try:
+        with db.cursor() as cursor:
+            # 1. Fetch all orders for the customer
+            cursor.execute(
+                "SELECT OrderID, OrderDate, TotalAmount FROM OrderTable WHERE CustomerID = %s ORDER BY OrderDate DESC",
+                (customer_id,)
+            )
+            orders = cursor.fetchall()
+            if not orders:
+                return [] # No orders found for this customer
+
+            # 2. For each order, fetch associated details
+            for order in orders:
+                order_id = order['OrderID']
+                order_details = {
+                    "order_id": order_id,
+                    "order_date": order['OrderDate'],
+                    "total_amount": order['TotalAmount'],
+                    "bookings": [],
+                    "equipment_rentals": [],
+                    "food_items": []
+                }
+
+                # Fetch Bookings associated with the order
+                cursor.execute(
+                    """
+                    SELECT
+                        b.BookingID, b.StartTime, b.Endtime, b.Status, b.TotalPrice,
+                        c.Court_ID, c.Type as CourtType, c.HourRate
+                    FROM Booking b
+                    JOIN Court c ON b.CourtID = c.Court_ID
+                    WHERE b.OrderID = %s AND b.CustomerID = %s
+                    """,
+                    (order_id, customer_id)
+                )
+                bookings = cursor.fetchall()
+                order_details["bookings"] = bookings
+
+                # Fetch Equipment Rentals associated with the order
+                cursor.execute(
+                    """
+                    SELECT
+                        r.EquipmentID, e.Name, e.Brand, e.Type as EquipmentType, e.Price
+                    FROM Rent r
+                    JOIN Equipment e ON r.EquipmentID = e.EquipmentID
+                    WHERE r.OrderID = %s
+                    """,
+                    (order_id,)
+                )
+                equipment_rentals = cursor.fetchall()
+                order_details["equipment_rentals"] = equipment_rentals
+
+                # Fetch Food Items associated with the order
+                cursor.execute(
+                    """
+                    SELECT
+                        `of`.`FoodID`, `cf`.`Name`, `cf`.`Category` as FoodCategory, `cf`.`Price`
+                    FROM `OrderFood` `of`
+                    JOIN `CafeteriaFood` `cf` ON `of`.`FoodID` = `cf`.`FoodID`
+                    WHERE `of`.`OrderID` = %s
+                    """,
+                    (order_id,)
+                )
+                food_items = cursor.fetchall()
+                order_details["food_items"] = food_items
+
+                orders_list.append(order_details)
+
+        return orders_list
+
+    except pymysql.Error as db_err:
+        logger.error(f"Database error fetching orders for CustomerID {customer_id}: {db_err}")
+        raise HTTPException(status_code=500, detail="Database error retrieving order history.")
+    except Exception as e:
+        logger.exception(f"Unexpected error fetching orders for CustomerID {customer_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error retrieving order history.")

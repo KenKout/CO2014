@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, model_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import pymysql
@@ -8,7 +8,8 @@ from loguru import logger
 from app.database import get_db
 from app.utils.auth import get_current_user
 from app.models.user import get_customer_id_by_username
-from app.models.order import process_order
+from app.models.order import process_order, get_user_orders # Import the new function
+from app.models.enums import BookingStatus, CourtType, EquipmentType, FoodCategory # Import necessary enums
 
 # Create user order router
 order_router = APIRouter(
@@ -48,11 +49,11 @@ class OrderRequest(BaseModel):
     equipment_orders: Optional[List[EquipmentOrderItem]] = None
     food_orders: Optional[List[FoodOrderItem]] = None
 
-    @validator('*', pre=True, each_item=True)
-    def check_at_least_one_order_type(cls, v, values):
-        if not values.get('court_orders') and not values.get('equipment_orders') and not values.get('food_orders'):
-             raise ValueError('At least one type of order (court, equipment, or food) must be provided')
-        return v
+    @model_validator(mode='after')
+    def check_at_least_one_order_type(self) -> 'OrderRequest':
+        if not self.court_orders and not self.equipment_orders and not self.food_orders:
+            raise ValueError('At least one type of order (court, equipment, or food) must be provided')
+        return self
     
 
 
@@ -63,7 +64,54 @@ class OrderResponse(BaseModel):
     total_amount: float
     message: str
 
-# --- API Endpoint ---
+
+# --- Pydantic Models for GET / Response ---
+
+class BookingDetail(BaseModel):
+    booking_id: int = Field(..., alias="BookingID")
+    start_time: datetime = Field(..., alias="StartTime")
+    end_time: datetime = Field(..., alias="Endtime")
+    status: BookingStatus = Field(..., alias="Status")
+    total_price: float = Field(..., alias="TotalPrice")
+    court_id: int = Field(..., alias="Court_ID")
+    court_type: CourtType = Field(..., alias="CourtType")
+    hour_rate: int = Field(..., alias="HourRate")
+
+    class Config:
+        populate_by_name = True # Allow using alias for field names from DB
+
+class EquipmentRentalDetail(BaseModel):
+    equipment_id: int = Field(..., alias="EquipmentID")
+    name: str = Field(..., alias="Name")
+    brand: Optional[str] = Field(None, alias="Brand")
+    equipment_type: EquipmentType = Field(..., alias="EquipmentType")
+    price: float = Field(..., alias="Price")
+
+    class Config:
+        populate_by_name = True
+
+class FoodItemDetail(BaseModel):
+    food_id: int = Field(..., alias="FoodID")
+    name: str = Field(..., alias="Name")
+    food_category: FoodCategory = Field(..., alias="FoodCategory")
+    price: float = Field(..., alias="Price")
+
+    class Config:
+        populate_by_name = True
+
+class UserOrderDetail(BaseModel):
+    order_id: int
+    order_date: datetime
+    total_amount: float
+    bookings: List[BookingDetail]
+    equipment_rentals: List[EquipmentRentalDetail]
+    food_items: List[FoodItemDetail]
+
+class UserOrderListResponse(BaseModel):
+    orders: List[UserOrderDetail]
+
+
+# --- API Endpoints ---
 
 @order_router.post("/", response_model=OrderResponse, status_code=status.HTTP_201_CREATED)
 async def create_user_order(
@@ -113,3 +161,43 @@ async def create_user_order(
         # Catch any unexpected errors
         logger.exception(f"Unexpected error creating order for user {username}: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred while creating the order.")
+
+
+@order_router.get("/", response_model=UserOrderListResponse, status_code=status.HTTP_200_OK)
+async def get_user_order_history(
+    db: pymysql.connections.Connection = Depends(get_db),
+    current_user: dict = Depends(get_current_user) # Requires user authentication
+):
+    """
+    Retrieve the order history for the authenticated user.
+    """
+    username = current_user.get('Username')
+    if not username:
+        # This case should ideally be handled by get_current_user dependency raising 401
+        logger.error("Username not found in token payload after authentication dependency.")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Authentication error")
+
+    try:
+        # Get CustomerID associated with the authenticated user
+        customer_id = get_customer_id_by_username(username, db)
+        # get_customer_id_by_username raises HTTPException if not found or on DB error
+
+        logger.info(f"Fetching order history for CustomerID: {customer_id} (Username: {username})")
+
+        # Call the model function to get the order history
+        orders_data = get_user_orders(customer_id=customer_id, db=db)
+        # get_user_orders raises HTTPException on errors
+
+        logger.info(f"Successfully retrieved {len(orders_data)} orders for CustomerID: {customer_id}")
+
+        # Wrap the list in the response model structure
+        # FastAPI will automatically handle validation against UserOrderListResponse
+        return UserOrderListResponse(orders=orders_data)
+
+    except HTTPException as e:
+        # Re-raise HTTPExceptions raised from model functions
+        raise e
+    except Exception as e:
+        # Catch any unexpected errors
+        logger.exception(f"Unexpected error retrieving order history for user {username}: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred while retrieving order history.")

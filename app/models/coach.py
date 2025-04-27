@@ -1,4 +1,5 @@
 import pymysql
+import datetime
 from fastapi import HTTPException
 from typing import List, Dict, Any
 from loguru import logger # Import loguru
@@ -87,7 +88,7 @@ def get_all_coaches_admin(db: pymysql.connections.Connection) -> List[Dict[str, 
             
             # Format dates
             for coach in coaches:
-                 if isinstance(coach.get("JoinDate"), datetime):
+                 if isinstance(coach.get("JoinDate"), datetime.datetime):
                     coach["JoinDate"] = coach["JoinDate"].isoformat()
 
             logger.info(f"Admin fetched {len(coaches)} coaches.")
@@ -125,7 +126,7 @@ def get_coach_details_admin(staff_id: int, db: pymysql.connections.Connection) -
             cursor.execute(sql, (staff_id,))
             coach = cursor.fetchone()
             
-            if coach and isinstance(coach.get("JoinDate"), datetime):
+            if coach and isinstance(coach.get("JoinDate"), datetime.datetime):
                  coach["JoinDate"] = coach["JoinDate"].isoformat()
 
     except pymysql.Error as db_err:

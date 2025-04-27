@@ -40,8 +40,9 @@ class EquipmentBase(BaseModel):
     url: Optional[HttpUrl] = Field(None, description="URL for the equipment image")
 
 class AdminEquipmentCreateRequest(EquipmentBase):
-    # EquipmentID is PK but not auto-incrementing in dump.sql
-    EquipmentID: int = Field(..., description="Unique ID for the equipment item.")
+    # EquipmentID is now AUTO_INCREMENT, removed from request.
+    # Inherits all fields from EquipmentBase
+    pass
 
 class AdminEquipmentUpdateRequest(BaseModel):
     Name: Optional[str] = Field(None, max_length=255)
@@ -66,14 +67,16 @@ async def create_equipment(
     Admin route to create a new equipment item.
     Requires admin privileges.
     """
-    logger.info(f"Admin request to create equipment ID: {equipment_data.EquipmentID}")
+    # Removed EquipmentID from log message as it's auto-generated
+    logger.info(f"Admin request to create equipment item: {equipment_data.Name}")
     try:
         created_item = create_equipment_admin(equipment_data=equipment_data, db=db)
         return created_item
     except HTTPException as e:
         raise e # Re-raise 400, 409, 500
     except Exception as e:
-        logger.exception(f"Admin: Unexpected error creating equipment ID {equipment_data.EquipmentID}: {e}")
+        # Removed EquipmentID from log message
+        logger.exception(f"Admin: Unexpected error creating equipment item {equipment_data.Name}: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
 
 # GET / - List all equipment

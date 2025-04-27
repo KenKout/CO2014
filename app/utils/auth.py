@@ -86,7 +86,7 @@ def get_current_admin(
     if user is None or user['UserType'] != UserType.STAFF.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized as admin",
+            detail="Not enough permissions",
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user

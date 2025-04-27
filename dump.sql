@@ -1,6 +1,6 @@
 -- User Table
 CREATE TABLE `User` (
-    `Username` VARCHAR(255) PRIMARY KEY AUTO_INCREMENT,
+    `Username` VARCHAR(255) PRIMARY KEY,
     `Password` VARCHAR(255),
     `Phone` VARCHAR(20),
     `UserType` ENUM('Customer', 'Staff'),

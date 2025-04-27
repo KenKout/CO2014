@@ -39,8 +39,8 @@ class FoodBase(BaseModel):
     url: Optional[HttpUrl] = Field(None, description="URL for the food item image") # Use HttpUrl for validation
 
 class AdminFoodCreateRequest(FoodBase):
-    # FoodID is PK but not auto-incrementing in dump.sql
-    FoodID: int = Field(..., description="Unique ID for the food item.")
+    # FoodID is now AUTO_INCREMENT, removed from request.
+    pass # Inherits all fields from FoodBase
 
 class AdminFoodUpdateRequest(BaseModel):
     Name: Optional[str] = Field(None, max_length=255)
@@ -64,14 +64,16 @@ async def create_food_item(
     Admin route to create a new cafeteria food item.
     Requires admin privileges.
     """
-    logger.info(f"Admin request to create food item ID: {food_data.FoodID}")
+    # Removed FoodID from log message as it's auto-generated
+    logger.info(f"Admin request to create food item: {food_data.Name}")
     try:
         created_item = create_food_item_admin(food_data=food_data, db=db)
         return created_item
     except HTTPException as e:
         raise e # Re-raise 400, 409, 500
     except Exception as e:
-        logger.exception(f"Admin: Unexpected error creating food item ID {food_data.FoodID}: {e}")
+        # Removed FoodID from log message
+        logger.exception(f"Admin: Unexpected error creating food item {food_data.Name}: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
 
 # GET / - List all food items

@@ -44,8 +44,7 @@ class TrainingSessionBase(BaseModel):
     Max_Students: int = Field(..., gt=0)
 
 class AdminTrainingSessionCreateRequest(TrainingSessionBase):
-    # SessionID is likely auto-generated or needs careful handling if manually set
-    SessionID: int = Field(..., description="SessionID must be provided as it's the PK.") # Make SessionID required for creation
+    # SessionID is now AUTO_INCREMENT, removed from request.
     Rating: Optional[float] = Field(None, ge=0.0, le=5.0, description="Initial rating (optional)")
     # Add schedule slots
     schedule_slots: Optional[List['ScheduleSlot']] = Field(None, description="Specific time slots for this session on the assigned court.")
