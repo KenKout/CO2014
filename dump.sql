@@ -1,6 +1,6 @@
 -- User Table
 CREATE TABLE `User` (
-    `Username` VARCHAR(255) PRIMARY KEY,
+    `Username` VARCHAR(255) PRIMARY KEY AUTO_INCREMENT,
     `Password` VARCHAR(255),
     `Phone` VARCHAR(20),
     `UserType` ENUM('Customer', 'Staff'),
@@ -35,7 +35,7 @@ CREATE TABLE `Coach` (
 
 -- Court Table
 CREATE TABLE `Court` (
-    `Court_ID` INT PRIMARY KEY,
+    `Court_ID` INT PRIMARY KEY AUTO_INCREMENT,
     `Status` ENUM('Available', 'Booked'),
     `HourRate` INT,
     `Type` ENUM('Normal', 'Air-conditioner')
@@ -43,7 +43,7 @@ CREATE TABLE `Court` (
 
 -- Training Session Table
 CREATE TABLE `Training_Session` (
-    `SessionID` INT PRIMARY KEY,
+    `SessionID` INT PRIMARY KEY AUTO_INCREMENT,
     `StartDate` DATETIME,
     `EndDate` DATETIME,
     `CoachID` INT,
@@ -98,7 +98,7 @@ CREATE TABLE `Payment` (
 
 -- CafeteriaFood Table
 CREATE TABLE `CafeteriaFood` (
-    `FoodID` INT PRIMARY KEY,
+    `FoodID` INT PRIMARY KEY AUTO_INCREMENT,
     `Stock` INT,
     `Name` VARCHAR(255),
     `Category` ENUM('Snack', 'Meal', 'Drink'),
@@ -108,7 +108,7 @@ CREATE TABLE `CafeteriaFood` (
 
 -- Equipment Table
 CREATE TABLE `Equipment` (
-    `EquipmentID` INT PRIMARY KEY,
+    `EquipmentID` INT PRIMARY KEY AUTO_INCREMENT,
     `Price` INT,
     `Type` ENUM('Racket', 'Shuttlecock', 'Shoes'),
     `Stock` INT,
@@ -169,3 +169,103 @@ CREATE TABLE `FeedBack` (
     FOREIGN KEY (`CourtID`) REFERENCES `Court`(`Court_ID`),
     FOREIGN KEY (`SessionID`) REFERENCES `Training_Session`(`SessionID`)
 );
+
+
+-- Procedure to get all food items call using : CALL GetAllCafeteriaFood()
+DELIMITER //
+
+CREATE PROCEDURE GetAllCafeteriaFood()
+BEGIN
+    SELECT * FROM CafeteriaFood;
+END //
+
+DELIMITER ;
+-- Procedure to get all equipment items call using: CALL GetAllEquipment()
+DELIMITER //
+
+CREATE PROCEDURE GetAllEquipment()
+BEGIN
+    SELECT * FROM Equipment;
+END //
+
+DELIMITER ;
+
+
+-- Trigger to automatically change the session status to 'Unavailable' when the max students are reached
+
+
+DELIMITER //
+
+CREATE TRIGGER after_enroll_insert
+AFTER INSERT ON Enroll
+FOR EACH ROW
+BEGIN
+    -- Declare variables to hold the current enrollment count and the max limit
+    DECLARE current_enrollment_count INT;
+    DECLARE max_students_limit INT;
+
+    -- Get the current number of students enrolled in the session that was just enrolled into
+    SELECT COUNT(*) INTO current_enrollment_count
+    FROM Enroll
+    WHERE SessionID = NEW.SessionID; -- NEW.SessionID refers to the SessionID of the newly inserted row
+
+    -- Get the maximum number of students allowed for this session
+    SELECT Max_Students INTO max_students_limit
+    FROM Training_Session
+    WHERE SessionID = NEW.SessionID;
+
+    -- Check if the current enrollment count equals the maximum limit
+    IF current_enrollment_count = max_students_limit THEN
+        -- If it does, update the status of the training session to 'Unavailable'
+        UPDATE Training_Session
+        SET Status = 'Unavailable'
+        WHERE SessionID = NEW.SessionID;
+    END IF;
+END //
+
+DELIMITER ;
+
+-- Trigger to automatically chang the rating of the session when a feedback is added on session
+
+DELIMITER $$
+
+-- Trigger to update session rating after a new feedback is inserted
+CREATE TRIGGER trg_FeedBack_AfterInsert_UpdateSessionRating
+AFTER INSERT ON FeedBack
+FOR EACH ROW
+BEGIN
+    -- Check if the feedback is for a Session and a SessionID is provided
+    IF NEW.`ON` = 'Session' AND NEW.SessionID IS NOT NULL THEN -- Added backticks here
+        -- Calculate the average rating for this session and update the Training_Session table
+        UPDATE Training_Session
+        SET Rating = (SELECT AVG(Rate) FROM FeedBack WHERE `ON` = 'Session' AND SessionID = NEW.SessionID) -- Added backticks here
+        WHERE SessionID = NEW.SessionID;
+    END IF;
+END$$
+
+-- Trigger to update session rating after a feedback is updated
+CREATE TRIGGER trg_FeedBack_AfterUpdate_UpdateSessionRating
+AFTER UPDATE ON FeedBack
+FOR EACH ROW
+BEGIN
+    -- Check if the OLD feedback was for a Session and a SessionID was provided.
+    -- If so, recalculate the rating for the OLD session (in case the session changed or feedback is no longer 'Session').
+    IF OLD.`ON` = 'Session' AND OLD.SessionID IS NOT NULL THEN -- Added backticks here
+        UPDATE Training_Session
+        SET Rating = (SELECT AVG(Rate) FROM FeedBack WHERE `ON` = 'Session' AND SessionID = OLD.SessionID) -- Added backticks here
+        WHERE SessionID = OLD.SessionID;
+    END IF;
+
+    -- Check if the NEW feedback is for a Session and a SessionID is provided.
+    -- If so, recalculate the rating for the NEW session. This handles:
+    -- 1. Rating change on the same session.
+    -- 2. Feedback changing from 'Court' to 'Session'.
+    -- 3. Feedback changing from one SessionID to another.
+    IF NEW.`ON` = 'Session' AND NEW.SessionID IS NOT NULL THEN -- Added backticks here
+        UPDATE Training_Session
+        SET Rating = (SELECT AVG(Rate) FROM FeedBack WHERE `ON` = 'Session' AND SessionID = NEW.SessionID) -- Added backticks here
+        WHERE SessionID = NEW.SessionID;
+    END IF;
+END$$
+
+DELIMITER ;
