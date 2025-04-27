@@ -1,106 +1,158 @@
-'use client';
+// src/app/admin/components/BookingList.tsx
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import styles from '../Admin.module.css'; // Ensure this path is correct
+import React, { useState, useEffect } from "react";
+import { createApiClient } from "@/utils/api";
+import styles from "@/styles/Admin.module.css"; // Assuming this CSS module exists
+import { useAuth } from '@/context/AuthContext';
 
+// Interface matching the backend Pydantic model (PascalCase)
+// and backend Status enum values
 interface Booking {
-    booking_id: number;
-    customer_id: number; // Keep for potential future use, even if not displayed
-    court_id: number;
-    start_time: string; // Use ISO date strings
-    end_time: string;   // Use ISO date strings
-    status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled'; // Use specific types
-    total_price: number;
+    BookingID: number;       // Changed to PascalCase
+    CustomerID: number;      // Changed to PascalCase
+    CourtID: number;         // Changed to PascalCase
+    StartTime: string;       // Changed to PascalCase (assuming string from JSON)
+    Endtime: string;         // Changed to PascalCase (assuming string from JSON)
+    Status: "Pending" | "Success" | "Cancel"; // Changed to backend enum values
+    TotalPrice: number;      // Changed to PascalCase
+    CustomerName?: string;    // Optional field, Changed to PascalCase
+    // CourtInfo is not strictly needed based on FE code, but keep if API sends it
+    CourtInfo?: string;       // Optional field, Changed to PascalCase
 }
 
-// --- Mock Data ---
-const mockBookingData: Booking[] = [
-    { booking_id: 1, customer_id: 501, court_id: 1, start_time: '2024-08-15T09:00:00Z', end_time: '2024-08-15T10:00:00Z', status: 'Confirmed', total_price: 150000 },
-    { booking_id: 2, customer_id: 502, court_id: 2, start_time: '2024-08-15T11:00:00Z', end_time: '2024-08-15T12:00:00Z', status: 'Pending', total_price: 150000 },
-    { booking_id: 3, customer_id: 503, court_id: 1, start_time: '2024-08-16T14:00:00Z', end_time: '2024-08-16T16:00:00Z', status: 'Completed', total_price: 300000 },
-    { booking_id: 4, customer_id: 501, court_id: 3, start_time: '2024-08-17T10:00:00Z', end_time: '2024-08-17T11:00:00Z', status: 'Cancelled', total_price: 180000 },
-];
-// --- End Mock Data ---
+// Define the statuses the backend *accepts* for updates
+type BackendBookingStatus = "Pending" | "Success" | "Cancel";
+
+// Define the statuses we want to *show* in the UI dropdown
+type FrontendBookingStatus = "Pending" | "Confirmed" | "Completed" | "Cancelled";
 
 
 const BookingList: React.FC = () => {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
-    // const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    const { token } = useAuth();
+    const api = createApiClient(token);
 
     useEffect(() => {
-        setLoading(true);
-        // --- Simulate API Call ---
-        const fetchBookings = async () => {
-             console.log('Simulating: Fetching booking data...');
-            // TODO: Replace this setTimeout with the actual API call
-            // Example:
-            // try {
-            //     const response = await fetch('/api/v2/admin/bookings');
-            //     if (!response.ok) throw new Error('Failed to fetch bookings');
-            //     const data = await response.json();
-            //     setBookings(data);
-            // } catch (err) {
-            //     setError('Failed to load booking data');
-            //     console.error(err);
-            // } finally {
-            //     setLoading(false);
-            // }
-
-            // Simulate network delay
-            setTimeout(() => {
-                setBookings(mockBookingData);
-                setLoading(false);
-                console.log('Simulating: Booking data loaded.');
-            }, 1200); // Simulate 1.2 second delay
-        };
-        // --- End Simulate API Call ---
-
         fetchBookings();
-    }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Dependency array is empty, fetchBookings uses token from context closure
 
-    const handleStatusUpdate = async (bookingId: number, newStatus: Booking['status']) => {
-        console.log(`Simulating: Update status for booking ID ${bookingId} to ${newStatus}`);
+    const fetchBookings = async () => {
+        setLoading(true);
+        try {
+            // API endpoint is correct
+            const response = await api.get("/admin/bookings/");
+            // Assuming response.data is an array of objects with PascalCase keys
+            setBookings(response.data);
+            setError(null);
+        } catch (err) {
+            console.error("Error fetching bookings:", err);
+            setError("Failed to load booking data. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        // --- Simulate API Call for Update ---
-        // TODO: Replace this with the actual API call to update status
-        // Example:
-        // try {
-        //     const response = await fetch(`/api/v2/admin/bookings/${bookingId}/status`, {
-        //         method: 'PUT',
-        //         headers: { 'Content-Type': 'application/json' },
-        //         body: JSON.stringify({ status: newStatus }),
-        //     });
-        //     if (!response.ok) throw new Error('Failed to update status');
-        //     // If API confirms, update local state:
-        //     setBookings(prevBookings => 
-        //         prevBookings.map(booking => 
-        //             booking.booking_id === bookingId 
-        //                 ? { ...booking, status: newStatus }
-        //                 : booking
-        //         )
-        //     );
-        // } catch (err) {
-        //     console.error('Error updating booking status:', err);
-        //     alert('Failed to update status. Please try again.'); // Inform user
-        // }
-        // --- End Simulate API Call ---
+    // Helper function to map Frontend Status choice to Backend Status for API call
+    const mapFrontendStatusToBackend = (frontendStatus: FrontendBookingStatus): BackendBookingStatus => {
+        switch (frontendStatus) {
+            case "Pending":
+                return "Pending";
+            case "Confirmed": // Map frontend "Confirmed" to backend "Success"
+                return "Success";
+            case "Completed": // Map frontend "Completed" to backend "Success"
+                return "Success";
+            case "Cancelled": // Map frontend "Cancelled" to backend "Cancel"
+                return "Cancel";
+            default:
+                // Fallback or error handling if needed, though TS should prevent this
+                return "Pending";
+        }
+    };
 
-        // For demo purposes, update the state directly after a short delay
-        setTimeout(() => {
-            setBookings(prevBookings =>
-                prevBookings.map(booking =>
-                    booking.booking_id === bookingId
-                        ? { ...booking, status: newStatus }
+    // Helper function to map Backend Status to a display string for the UI
+    const mapBackendStatusToDisplay = (backendStatus: BackendBookingStatus): string => {
+        switch (backendStatus) {
+            case "Pending":
+                return "Pending";
+            case "Success":
+                return "Completed"; // Display "Success" as "Completed"
+            case "Cancel":
+                return "Cancelled"; // Display "Cancel" as "Cancelled"
+            default:
+                return backendStatus;
+        }
+    }
+
+    // Helper function to map Backend Status to CSS class suffix
+    // Assumes CSS classes like statusPending, statusCompleted, statusCancelled exist
+     const mapBackendStatusToCssSuffix = (backendStatus: BackendBookingStatus): string => {
+        switch (backendStatus) {
+            case "Pending":
+                return "Pending";
+            case "Success":
+                return "Completed"; // Use 'Completed' class for 'Success' status
+            case "Cancel":
+                return "Cancelled"; // Use 'Cancelled' class for 'Cancel' status
+            default:
+                return "";
+        }
+    }
+
+    const handleStatusUpdate = async (
+        bookingId: number,
+        newFrontendStatus: FrontendBookingStatus // User selected one of these
+    ) => {
+        const newBackendStatus = mapFrontendStatusToBackend(newFrontendStatus); // Map to backend value
+
+        try {
+            // Use PascalCase 'status' in the request body if the backend expects it
+            // Based on the backend code provided (BookingStatusUpdateRequest), it expects lowercase 'status'.
+            await api.put(`/admin/bookings/${bookingId}/status`, {
+                status: newBackendStatus, // Send the mapped backend status value
+            });
+
+            // Update local state: Fetch the updated booking or manually update
+            // Manual update: use the *backend* status we expect the API to have set
+            setBookings((prevBookings) =>
+                prevBookings.map((booking) =>
+                    booking.BookingID === bookingId // Use PascalCase for comparison
+                        ? { ...booking, Status: newBackendStatus } // Update Status with backend value
                         : booking
                 )
             );
-            console.log(`Simulating: Local state updated for booking ${bookingId}`);
-        }, 300); // Short delay to mimic network time
+        } catch (err) {
+            console.error("Error updating booking status:", err);
+            alert("Failed to update status. Please try again.");
+        }
     };
 
-    if (loading) return <div className={styles.loadingIndicator}>Loading booking data...</div>;
-    // if (error) return <div className={styles.error}>{error}</div>;
+    const getBookingDetails = async (bookingId: number) => {
+        try {
+            const response = await api.get(`/admin/bookings/${bookingId}`);
+            // Data in response.data will have PascalCase keys
+            alert(
+                `Booking details for ID ${bookingId} retrieved successfully. Check console.`
+            );
+            console.log("Raw Booking Details:", response.data);
+            // If displaying in a modal, access properties like response.data.BookingID, response.data.StartTime etc.
+        } catch (err) {
+            console.error("Error fetching booking details:", err);
+            alert("Failed to get booking details. Please try again.");
+        }
+    };
+
+    if (loading)
+        return (
+            <div className={styles.loadingIndicator}>
+                Loading booking data...
+            </div>
+        );
+    if (error) return <div className={styles.error}>{error}</div>;
 
     return (
         <div className={styles.listContainer}>
@@ -109,46 +161,86 @@ const BookingList: React.FC = () => {
                 <thead>
                     <tr>
                         <th>ID</th>
+                        <th>Customer</th>
                         <th>Court</th>
                         <th>Start Time</th>
                         <th>End Time</th>
                         <th>Status</th>
                         <th>Price</th>
-                        <th>Actions</th> {/* Changed header */}
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {bookings.map(booking => (
-                        <tr key={booking.booking_id}>
-                            <td>{booking.booking_id}</td>
-                            <td>Court {booking.court_id}</td>
-                            {/* Use more robust date formatting */}
-                            <td>{new Date(booking.start_time).toLocaleString()}</td>
-                            <td>{new Date(booking.end_time).toLocaleString()}</td>
+                    {bookings.map((booking) => (
+                        <tr key={booking.BookingID}> {/* Use PascalCase key */}
+                            <td>{booking.BookingID}</td> {/* Use PascalCase */}
                             <td>
-                                <span className={`${styles.statusBadge} ${styles[`status${booking.status}`]}`}>
-                                    {booking.status}
+                                {/* Use PascalCase, provide fallback */}
+                                {booking.CustomerName ||
+                                    `Customer #${booking.CustomerID}`}
+                            </td>
+                            <td>Court {booking.CourtID}</td> {/* Use PascalCase */}
+                            <td>
+                                {/* Use PascalCase */}
+                                {new Date(booking.StartTime).toLocaleString()}
+                            </td>
+                            <td>
+                                {/* Use PascalCase */}
+                                {new Date(booking.Endtime).toLocaleString()}
+                            </td>
+                            <td>
+                                {/* Display mapped status, use mapped CSS class */}
+                                <span
+                                    className={`${styles.statusBadge} ${
+                                        styles[`status${mapBackendStatusToCssSuffix(booking.Status)}`]
+                                    }`}
+                                >
+                                    {mapBackendStatusToDisplay(booking.Status)}
                                 </span>
                             </td>
-                            <td>{booking.total_price.toLocaleString()} VND</td>
+                            {/* Use PascalCase, ensure toLocaleString() works */}
+                            <td>{booking.TotalPrice?.toLocaleString()}k VND</td>
                             <td>
-                                <select 
-                                    value={booking.status}
-                                    onChange={(e) => handleStatusUpdate(booking.booking_id, e.target.value as Booking['status'])}
+                                {/* The SELECT shows frontend options, but its effective value for submission
+                                    needs mapping. We use onChange to trigger the update with mapping.
+                                    The `value` prop here determines the *currently selected* option shown.
+                                    We should map the backend status back to a suitable frontend status
+                                    for display consistency in the dropdown. Let's map Success -> Completed.
+                                */}
+                                <select
+                                    value={mapBackendStatusToDisplay(booking.Status)} // Show corresponding frontend status as selected
+                                    onChange={(e) =>
+                                        handleStatusUpdate(
+                                            booking.BookingID, // Use PascalCase
+                                            e.target.value as FrontendBookingStatus // Read the selected frontend status
+                                        )
+                                    }
                                     className={styles.statusSelect}
                                 >
+                                    {/* Options represent the actions the admin can take (Frontend terms) */}
                                     <option value="Pending">Pending</option>
-                                    <option value="Confirmed">Confirmed</option>
-                                    <option value="Completed">Completed</option>
-                                    <option value="Cancelled">Cancelled</option>
+                                    <option value="Confirmed">Confirm</option> {/* User action */}
+                                    <option value="Completed">Complete</option> {/* User action */}
+                                    <option value="Cancelled">Cancel</option>   {/* User action */}
                                 </select>
-                                {/* TODO: Add View Details button/logic if needed */}
+
+                                <button
+                                    className={styles.actionButton}
+                                    onClick={() =>
+                                        getBookingDetails(booking.BookingID) // Use PascalCase
+                                    }
+                                >
+                                    Details
+                                </button>
                             </td>
                         </tr>
                     ))}
                 </tbody>
             </table>
-            {bookings.length === 0 && !loading && <div>No bookings found.</div>} {/* Show if empty */}
+
+            {bookings.length === 0 && !loading && (
+                <div className={styles.emptyMessage}>No bookings found.</div>
+            )}
         </div>
     );
 };

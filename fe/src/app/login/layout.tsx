@@ -1,4 +1,3 @@
-import './styles.css'; // Import login-specific styles
 import React from 'react';
 // import type { Metadata } from 'next'; // Removed Metadata import
 

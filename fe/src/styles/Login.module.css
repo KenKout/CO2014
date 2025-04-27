@@ -17,7 +17,7 @@
   background-color: #fff;
   display: flex; /* This makes logo and form sections side-by-side */
   border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   overflow: hidden; /* To contain the two sections */
   max-width: 900px; /* Increased from 900px */
   width: 100%; /* Take full width up to max-width */
@@ -25,7 +25,7 @@
 
 /* Logo Section */
 .logo-section {
-  background-color: #007bff; /* Primary blue color */
+  background-color: #4CAF50; /* Changed to match booking module green */
   color: white;
   padding: 40px;
   flex: 1;
@@ -87,7 +87,7 @@
 .form-title {
   text-align: center;
   margin-bottom: 20px; /* Reduced from 25px */
-  color: #333;
+  color: #2c3e50; /* Changed to match booking module */
 }
 
 /* Form Groups and Input Fields */
@@ -98,8 +98,8 @@
 .form-group label {
   display: block;
   margin-bottom: 5px;
-  font-weight: bold;
-  color: #555;
+  font-weight: 500; /* Changed to match booking module */
+  color: #2c3e50; /* Changed to match booking module */
 }
 
 .input-group {
@@ -117,27 +117,27 @@
 .form-control {
   width: 100%;
   padding: 10px 15px 10px 40px; /* Padding for icon */
-  border: 1px solid #ccc;
-  border-radius: 5px;
+  border: 1px solid #ddd; /* Changed to match booking module */
+  border-radius: 4px; /* Changed to match booking module */
   box-sizing: border-box;
   font-size: 1em;
 }
 
 .form-control:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  border-color: #4CAF50; /* Changed to match booking module */
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1); /* Changed to match booking module */
 }
 
 /* Input validation styles */
 .input-valid {
-    border-color: #28a745; /* Green */
+    border-color: #4CAF50; /* Changed to match booking module */
 }
 .input-invalid {
     border-color: #dc3545; /* Red */
 }
 .input-valid:focus {
-    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.25);
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1); /* Changed to match booking module */
 }
 .input-invalid:focus {
     box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.25);
@@ -173,7 +173,7 @@
 .register-link a,
 .back-to-login,
 .remember-me a {
-  color: #007bff;
+  color: #4CAF50; /* Changed to match booking module */
   text-decoration: none;
 }
 
@@ -190,8 +190,8 @@
   width: 100%;
   padding: 12px;
   border: none;
-  border-radius: 5px;
-  background-color: #007bff;
+  border-radius: 4px; /* Changed to match booking module */
+  background-color: #4CAF50; /* Changed to match booking module */
   color: white;
   font-size: 1.1em;
   font-weight: bold;
@@ -202,7 +202,7 @@
 
 .login-btn:hover,
 .create-account-btn:hover {
-  background-color: #0056b3;
+  background-color: #388e3c; /* Changed to match booking module */
 }
 
 .create-account-btn i {
@@ -229,8 +229,8 @@
 
 .social-btn button {
   padding: 10px 15px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+  border: 1px solid #ddd; /* Changed to match booking module */
+  border-radius: 4px; /* Changed to match booking module */
   background-color: #fff;
   cursor: pointer;
   font-size: 0.9em;
@@ -241,7 +241,7 @@
 }
 
 .social-btn button:hover {
-  background-color: #f8f8f8;
+  background-color: #f8f9fa; /* Changed to match booking module */
 }
 
 .btn-google {
@@ -300,7 +300,7 @@
 .alert {
   padding: 10px;
   margin-bottom: 15px;
-  border-radius: 5px;
+  border-radius: 4px; /* Changed to match booking module */
   font-size: 0.9em;
   display: none; /* Hidden by default */
 }
@@ -312,8 +312,8 @@
 }
 
 .alert-success {
-  background-color: #d4edda;
-  color: #155724;
+  background-color: #e8f5e9; /* Changed to match booking module */
+  color: #2e7d32; /* Changed to match booking module */
   border: 1px solid #c3e6cb;
 }
 
@@ -339,7 +339,7 @@
   width: 90%;
   max-width: 450px;
   position: relative;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); /* Changed to match booking module */
 }
 
 .close-modal {
@@ -385,14 +385,14 @@
   height: 45px;
   text-align: center;
   font-size: 1.2em;
-  border: 1px solid #ccc;
+  border: 1px solid #ddd; /* Changed to match booking module */
   border-radius: 4px;
 }
 
 .otp-input:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  border-color: #4CAF50; /* Changed to match booking module */
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1); /* Changed to match booking module */
 }
 
 .resend-container {
@@ -402,7 +402,7 @@
 }
 
 #resend-otp {
-  color: #007bff;
+  color: #4CAF50; /* Changed to match booking module */
   text-decoration: none;
   cursor: pointer;
 }
@@ -424,7 +424,7 @@
 }
 
 .verification-status.success {
-  color: #28a745; /* Green */
+  color: #4CAF50; /* Changed to match booking module */
 }
 
 .verification-status.error {
@@ -439,10 +439,10 @@
 
 .success-icon i {
   font-size: 50px;
-  color: #28a745;
+  color: #4CAF50; /* Changed to match booking module */
 }
 
 /* Make modal visible when needed (controlled by JS/React state) */
 .modal.visible {
     display: flex;
-} 
+}

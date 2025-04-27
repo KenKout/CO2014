@@ -1,12 +1,17 @@
+// @/app/login/page.tsx
 'use client'; // Mark this component as a Client Component
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { createApiClient, API_BASE_URL } from '@/utils/api';
+import styles from '@/styles/Login.module.css';
 import Link from 'next/link';
-import styles from './page.module.css';
 
 export default function LoginPage() {
-  // State for toggling between Login and Signup
-  const [isSignupVisible, setIsSignupVisible] = useState(false);
+  const { login } = useAuth(); // Move this to the top level
+  const router = useRouter(); // Move this to the top level
+  // State for toggling between Login
 
   // State for Forgot Password Modal
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -22,23 +27,13 @@ export default function LoginPage() {
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // State for Form Inputs (example for login)
-  const [loginEmail, setLoginEmail] = useState('');
+  const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
 
-  // --- Add more state variables for signup inputs, password strength, validation etc. as needed ---
-  const [signupFullname, setSignupFullname] = useState('');
-  const [signupEmail, setSignupEmail] = useState('');
-  const [signupPassword, setSignupPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [agreeTerms, setAgreeTerms] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState({ score: 0, text: 'Password strength' });
-  const [passwordsMatch, setPasswordsMatch] = useState(true);
-  const [isSignupEmailValid, setIsSignupEmailValid] = useState(true);
-
   // State for Forgot Password flow
-  const [recoveryEmail, setRecoveryEmail] = useState('');
-  const [isRecoveryEmailValid, setIsRecoveryEmailValid] = useState(true);
+  const [recoveryUsername, setRecoveryUsername] = useState('');
+  const [isRecoveryUsernameValid, setIsRecoveryUsernameValid] = useState(true);
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [newPasswordStrength, setNewPasswordStrength] = useState({ score: 0, text: 'Password strength' });
@@ -47,88 +42,46 @@ export default function LoginPage() {
 
   // State for Alerts
   const [loginAlert, setLoginAlert] = useState({ message: '', type: '', visible: false }); // type: 'error', 'success'
-  const [signupAlert, setSignupAlert] = useState({ message: '', type: '', visible: false });
 
   // --- Event Handlers ---
 
-  const handleShowSignup = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    setIsSignupVisible(true);
-    clearAlerts();
-  };
-
-  const handleBackToLogin = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    setIsSignupVisible(false);
-    clearAlerts();
-  };
 
   const clearAlerts = () => {
     setLoginAlert({ message: '', type: '', visible: false });
-    setSignupAlert({ message: '', type: '', visible: false });
   };
 
   // Login Form Submission
-  const handleLoginSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  // In LoginPage, update the handleLoginSubmit function:
+  const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     clearAlerts();
-    console.log('Login attempt:', { email: loginEmail, password: loginPassword, remember: rememberMe });
-    // TODO: Implement actual login logic (API call)
-    setLoginAlert({ message: 'Login functionality would be implemented on the server side.', type: 'success', visible: true });
-    // On success: redirect or update UI state
-    // On failure: setLoginAlert({ message: 'Invalid credentials.', type: 'error', visible: true });
+    try {
+      const apiClient = createApiClient(null);
+      const response = await apiClient.post('/auth/login', {
+        username: loginUsername,
+        password: loginPassword
+      });
+      
+      // Set success message
+      setLoginAlert({ message: 'Login successful!', type: 'success', visible: true });
+      
+      // Wait for the alert to be visible before login and navigation
+      setTimeout(() => {
+        login(response.data.access_token);
+        router.push('/'); // Navigate to home page instead of profile
+      }, 1000);
+    } catch (error) {
+      console.error('Login error:', error);
+      const errorMessage = (error as any)?.response?.data?.detail || 'An error occurred during login.';
+      setLoginAlert({ message: errorMessage, type: 'error', visible: true });
+    }
   };
 
-  // Signup Form Submission
-  const handleSignupSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    clearAlerts();
 
-    if (!isSignupEmailValid || signupEmail === '') {
-      setSignupAlert({ message: 'Please enter a valid email address.', type: 'error', visible: true });
-      return;
-    }
-    if (signupPassword.length < 8) {
-      setSignupAlert({ message: 'Password must be at least 8 characters long.', type: 'error', visible: true });
-      return;
-    }
-    if (!passwordsMatch) {
-      setSignupAlert({ message: 'Passwords do not match.', type: 'error', visible: true });
-      return;
-    }
-    if (!agreeTerms) {
-      setSignupAlert({ message: 'You must agree to the Terms of Service and Privacy Policy.', type: 'error', visible: true });
-      return;
-    }
-
-    console.log('Sign up attempt:', { fullname: signupFullname, email: signupEmail, password: signupPassword, agreeTerms });
-    // TODO: Implement actual signup logic (API call)
-    setSignupAlert({ message: 'Registration successful! You can now log in.', type: 'success', visible: true });
-
-    // Reset form or switch to login
-    // e.target.reset(); // Not directly applicable in React like this
-    setSignupFullname('');
-    setSignupEmail('');
-    setSignupPassword('');
-    setConfirmPassword('');
-    setAgreeTerms(false);
-    setPasswordStrength({ score: 0, text: 'Password strength' });
-
-    setTimeout(() => {
-        setIsSignupVisible(false);
-        clearAlerts();
-    }, 3000);
-  };
-
-  // Social Login/Signup Handlers (Placeholders)
+  // Social Login Handlers (Placeholders)
   const handleSocialLogin = (provider: string) => {
       console.log(`${provider} login clicked`);
       alert(`${provider} login would be implemented with OAuth`);
-      clearAlerts();
-  };
-  const handleSocialSignup = (provider: string) => {
-      console.log(`${provider} signup clicked`);
-      alert(`${provider} sign up would be implemented with OAuth`);
       clearAlerts();
   };
 
@@ -152,11 +105,6 @@ export default function LoginPage() {
     return { score, text };
   };
 
-  // Update password strength on signup password change
-  useEffect(() => {
-    setPasswordStrength(calculatePasswordStrength(signupPassword));
-    setPasswordsMatch(signupPassword === confirmPassword || confirmPassword === '');
-  }, [signupPassword, confirmPassword]);
 
   // Update new password strength on new password change
    useEffect(() => {
@@ -164,20 +112,15 @@ export default function LoginPage() {
     setNewPasswordsMatch(newPassword === confirmNewPassword || confirmNewPassword === '');
   }, [newPassword, confirmNewPassword]);
 
-  // Email Validation
-  const validateEmail = (email: string): boolean => {
-    if (!email) return true; // Don't show error for empty field initially
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+  // Username Validation
+  const validateUsername = (username: string): boolean => {
+    return username !== ''; // Basic validation, can be enhanced if needed
   };
+  
 
   useEffect(() => {
-    setIsSignupEmailValid(validateEmail(signupEmail));
-  }, [signupEmail]);
-
-  useEffect(() => {
-    setIsRecoveryEmailValid(validateEmail(recoveryEmail));
-  }, [recoveryEmail]);
+    setIsRecoveryUsernameValid(validateUsername(recoveryUsername));
+  }, [recoveryUsername]);
 
   // --- Forgot Password Modal Logic ---
 
@@ -197,8 +140,8 @@ export default function LoginPage() {
   };
 
   const resetForgotPasswordForm = () => {
-    setRecoveryEmail('');
-    setIsRecoveryEmailValid(true);
+    setRecoveryUsername('');
+    setIsRecoveryUsernameValid(true);
     setOtp(new Array(6).fill(''));
     setNewPassword('');
     setConfirmNewPassword('');
@@ -250,12 +193,12 @@ export default function LoginPage() {
 
   // Send OTP Button Handler
   const handleSendOtp = () => {
-    if (!isRecoveryEmailValid || recoveryEmail === '') {
-        setIsRecoveryEmailValid(false);
+    if (!isRecoveryUsernameValid || recoveryUsername === '') {
+        setIsRecoveryUsernameValid(false);
         // Optionally show an alert
         return;
     }
-    console.log('Sending OTP to:', recoveryEmail);
+    console.log('Sending OTP to:', recoveryUsername);
     // TODO: Implement API call to send OTP
     setModalStep('otp-step');
     startResendTimer();
@@ -267,7 +210,7 @@ export default function LoginPage() {
   // Resend OTP Handler
   const handleResendOtp = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
-    console.log('Resending OTP to:', recoveryEmail);
+    console.log('Resending OTP to:', recoveryUsername);
     // TODO: Implement API call to resend OTP
     setOtp(new Array(6).fill(''));
     setVerificationStatus({ text: '', status: '' });
@@ -397,48 +340,48 @@ export default function LoginPage() {
   // --- JSX Structure ---
 
   return (
-    <div className="login-container-wrapper">
-      <div className={`login-container ${isSignupVisible ? 'show-signup' : ''}`}>
+    <div className={styles['login-container-wrapper']}>
+      <div className={`${styles['login-container']} ${styles['login-container']}`}>
         {/* Logo Section */}
-        <div className="logo-section">
+        <div className={styles['logo-section']}>
           <h1>BadmintonHub</h1>
           <p>Book courts, play more!</p>
         </div>
 
         {/* Form Container */}
-        <div className="form-container">
+        <div className={styles['form-container']}>
 
           {/* Login Form Section */}
-          <div className="form-section">
-            <h2 className="form-title">Login to Your Account</h2>
+          <div className={styles['form-section']}>
+            <h2 className={styles['form-title']}>Login to Your Account</h2>
             {loginAlert.visible && (
-              <div className={`alert alert-${loginAlert.type}`}>{loginAlert.message}</div>
+              <div className={`${styles.alert} ${styles[`alert-${loginAlert.type}`]}`}>{loginAlert.message}</div>
             )}
             <form id="login-form" onSubmit={handleLoginSubmit}>
-              <div className="form-group">
-                <label htmlFor="email">Email Address</label>
-                <div className="input-group">
-                  <i className="fas fa-envelope"></i>
+              <div className={styles['form-group']}>
+                <label htmlFor="username">Username</label>
+                <div className={styles['input-group']}>
+                  <i className="fas fa-user"></i>
                   <input
-                    type="email"
-                    id="email"
-                    className="form-control"
-                    placeholder="Enter your email"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
+                    type="text"
+                    id="username"
+                    className={styles['form-control']}
+                    placeholder="Enter your username"
+                    value={loginUsername}
+                    onChange={(e) => setLoginUsername(e.target.value)}
                     required
                   />
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className={styles['form-group']}>
                 <label htmlFor="password">Password</label>
-                <div className="input-group">
+                <div className={styles['input-group']}>
                   <i className="fas fa-lock"></i>
                   <input
                     type="password"
                     id="password"
-                    className="form-control"
+                    className={styles['form-control']}
                     placeholder="Enter your password"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
@@ -447,8 +390,8 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <div className="remember-forgot">
-                <div className="remember-me">
+              <div className={styles['remember-forgot']}>
+                <div className={styles['remember-me']}>
                   <input
                     type="checkbox"
                     id="remember"
@@ -457,147 +400,28 @@ export default function LoginPage() {
                   />
                   <label htmlFor="remember">Remember me</label>
                 </div>
-                <a href="#" className="forgot-password" onClick={openModal}>Forgot Password?</a>
+                <a href="#" className={styles['forgot-password']} onClick={openModal}>Forgot Password?</a>
               </div>
 
-              <button type="submit" className="login-btn">Login</button>
+              <button type="submit" className={styles['login-btn']}>Login</button>
 
-              <div className="social-login">
-                <div className="social-login-text">Or login with</div>
-                <div className="social-btn">
-                  <button type="button" className="btn-google" onClick={() => handleSocialLogin('Google')}>
+              <div className={styles['social-login']}>
+                <div className={styles['social-login-text']}>Or login with</div>
+                <div className={styles['social-btn']}>
+                  <button type="button" className={styles['btn-google']} onClick={() => handleSocialLogin('Google')}>
                     <i className="fab fa-google"></i> Google
                   </button>
-                  <button type="button" className="btn-facebook" onClick={() => handleSocialLogin('Facebook')}>
+                  <button type="button" className={styles['btn-facebook']} onClick={() => handleSocialLogin('Facebook')}>
                     <i className="fab fa-facebook-f"></i> Facebook
                   </button>
                 </div>
               </div>
             </form>
 
-            <div className="register-link">
-              Don't have an account? <a href="#" id="show-signup" onClick={handleShowSignup}>Sign up now</a>
+            {/* Replace the existing register-link div with this */}
+            <div className={styles["register-link"]}>
+              Don't have an account? <Link href="/register">Sign up now</Link>
             </div>
-          </div>
-
-          {/* Sign Up Form Section */}
-          <div className="signup-section">
-            <h2 className="form-title">Create an Account</h2>
-            {signupAlert.visible && (
-              <div className={`alert alert-${signupAlert.type}`}>{signupAlert.message}</div>
-            )}
-            <form id="signup-form" onSubmit={handleSignupSubmit}>
-              <div className="form-group">
-                <label htmlFor="fullname">Full Name</label>
-                <div className="input-group">
-                  <i className="fas fa-user"></i>
-                  <input
-                    type="text"
-                    id="fullname"
-                    className="form-control"
-                    placeholder="Enter your full name"
-                    value={signupFullname}
-                    onChange={(e) => setSignupFullname(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="signup-email">Email Address</label>
-                <div className="input-group">
-                  <i className="fas fa-envelope"></i>
-                  <input
-                    type="email"
-                    id="signup-email"
-                    className={`form-control ${signupEmail ? (isSignupEmailValid ? 'input-valid' : 'input-invalid') : ''}`}
-                    placeholder="Enter your email"
-                    value={signupEmail}
-                    onChange={(e) => setSignupEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                {!isSignupEmailValid && signupEmail && (
-                   <div className="validation-feedback invalid-feedback" style={{ display: 'block' }}>Please enter a valid email address.</div>
-                )}
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="signup-password">Password</label>
-                <div className="input-group">
-                  <i className="fas fa-lock"></i>
-                  <input
-                    type="password"
-                    id="signup-password"
-                    className="form-control"
-                    placeholder="Create a password"
-                    value={signupPassword}
-                    onChange={(e) => setSignupPassword(e.target.value)}
-                    required
-                    minLength={8}
-                  />
-                </div>
-                <div className="password-strength">
-                  <span id="password-strength-text">{passwordStrength.text}</span>
-                  <div className="strength-meter">
-                    <div id="strength-bar" style={{
-                         width: `${passwordStrength.score}%`,
-                         backgroundColor: passwordStrength.score < 30 ? '#f44336' : passwordStrength.score < 60 ? '#ff9800' : passwordStrength.score < 80 ? '#4caf50' : '#2e7d32'
-                    }}></div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="confirm-password">Confirm Password</label>
-                <div className="input-group">
-                  <i className="fas fa-lock"></i>
-                  <input
-                    type="password"
-                    id="confirm-password"
-                    className={`form-control ${confirmPassword ? (passwordsMatch ? 'input-valid' : 'input-invalid') : ''}`}
-                    placeholder="Confirm your password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                {!passwordsMatch && confirmPassword && (
-                   <div className="validation-feedback invalid-feedback" style={{ display: 'block' }}>Passwords do not match.</div>
-                )}
-              </div>
-
-              <div className="form-group">
-                <div className="remember-me"> {/* Reusing class name, style might need adjustment */}
-                  <input
-                      type="checkbox"
-                      id="terms"
-                      checked={agreeTerms}
-                      onChange={(e) => setAgreeTerms(e.target.checked)}
-                      required
-                  />
-                  <label htmlFor="terms">I agree to the <a href="#" onClick={(e) => e.preventDefault()}>Terms of Service</a> and <a href="#" onClick={(e) => e.preventDefault()}>Privacy Policy</a></label>
-                </div>
-              </div>
-
-              <button type="submit" className="create-account-btn">
-                <i className="fas fa-user-plus"></i> Create Account
-              </button>
-
-              <div className="social-login">
-                <div className="social-login-text">Or sign up with</div>
-                <div className="social-btn">
-                  <button type="button" className="btn-google" onClick={() => handleSocialSignup('Google')}>
-                    <i className="fab fa-google"></i> Google
-                  </button>
-                  <button type="button" className="btn-facebook" onClick={() => handleSocialSignup('Facebook')}>
-                    <i className="fab fa-facebook-f"></i> Facebook
-                  </button>
-                </div>
-              </div>
-            </form>
-
-            <a href="#" className="back-to-login" id="back-to-login" onClick={handleBackToLogin}>Already have an account? Login</a>
           </div>
         </div>
 
@@ -611,25 +435,25 @@ export default function LoginPage() {
               {modalStep === 'email-step' && (
                 <div className="modal-step" id="email-step">
                   <h2>Forgot Password</h2>
-                  <p>Enter your email address to receive a verification code.</p>
+                  <p>Enter your username to receive a verification code.</p>
                   <div className="form-group">
                     <div className="input-group">
-                      <i className="fas fa-envelope"></i>
+                      <i className="fas fa-user"></i>
                       <input
-                        type="email"
-                        id="recovery-email"
-                        className={`form-control ${recoveryEmail ? (isRecoveryEmailValid ? 'input-valid' : 'input-invalid') : ''}`}
-                        placeholder="Enter your email"
-                        value={recoveryEmail}
-                        onChange={(e) => setRecoveryEmail(e.target.value)}
+                        type="text"
+                        id="recovery-username"
+                        className={`form-control ${recoveryUsername ? (isRecoveryUsernameValid ? 'input-valid' : 'input-invalid') : ''}`}
+                        placeholder="Enter your username"
+                        value={recoveryUsername}
+                        onChange={(e) => setRecoveryUsername(e.target.value)}
                         required
                       />
                     </div>
-                    {!isRecoveryEmailValid && recoveryEmail && (
-                      <div id="recovery-email-feedback" className="validation-feedback invalid-feedback" style={{ display: 'block' }}>Please enter a valid email address.</div>
+                    {!isRecoveryUsernameValid && recoveryUsername && (
+                      <div id="recovery-username-feedback" className="validation-feedback invalid-feedback" style={{ display: 'block' }}>Please enter a valid username.</div>
                     )}
                   </div>
-                  <button type="button" className="login-btn" id="send-otp-btn" onClick={handleSendOtp} disabled={!recoveryEmail || !isRecoveryEmailValid}>
+                  <button type="button" className="login-btn" id="send-otp-btn" onClick={handleSendOtp} disabled={!recoveryUsername || !isRecoveryUsernameValid}>
                       Send Verification Code
                   </button>
                 </div>
@@ -639,7 +463,7 @@ export default function LoginPage() {
               {modalStep === 'otp-step' && (
                 <div className="modal-step" id="otp-step">
                   <h2>Enter Verification Code</h2>
-                  <p>We've sent a verification code to {recoveryEmail}. Please enter it below.</p>
+                  <p>We've sent a verification code to {recoveryUsername}. Please enter it below.</p>
                   <div className="form-group">
                     <div className="otp-container" onPaste={handleOtpPaste}>
                       {otp.map((digit, index) => (

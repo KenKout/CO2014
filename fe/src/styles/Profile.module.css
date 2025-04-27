@@ -1,0 +1,128 @@
+/* app/profile/Profile.module.css */
+
+.profilePage {
+    font-family: 'Times New Roman', Times, serif;
+    background-color: #f8f9fa; /* Updated to match booking module */
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.pageTitle {
+    text-align: center;
+    color: #2c3e50; /* Updated to match booking module */
+    margin-bottom: 2rem;
+    font-size: 2.5rem;
+}
+
+.profileDetails {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); /* Updated to match booking module */
+}
+
+.profileHeader {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.profileHeader h2 {
+    color: #2c3e50; /* Updated to match booking module */
+    margin-bottom: 0.5rem;
+}
+
+.profileHeader p {
+    color: #555; /* Updated to match booking module */
+}
+
+.profileBody {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+}
+
+.profileSection {
+    margin-bottom: 1.5rem;
+}
+
+.profileSection h3 {
+    color: #2c3e50; /* Updated to match booking module */
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    border-bottom: 2px solid #f0f0f0; /* Updated to match booking module */
+    padding-bottom: 0.5rem;
+}
+
+.profileSection p {
+    color: #555; /* Updated to match booking module */
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+}
+
+.profileSection p strong {
+    color: #2c3e50; /* Updated to match booking module */
+}
+
+.editButton, .logoutButton {
+    background-color: #4CAF50; /* Updated to match booking module */
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-weight: 500;
+    margin-right: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.editButton:hover, .logoutButton:hover {
+    background-color: #388e3c; /* Updated to match booking module */
+}
+
+.logoutButton {
+    background-color: #dc3545; /* Different color for logout */
+}
+
+.logoutButton:hover {
+    background-color: #c82333; /* Darker red on hover */
+}
+
+.loading, .error {
+    text-align: center;
+    padding: 40px 20px;
+    font-size: 1.2rem;
+    color: #555; /* Updated to match booking module */
+}
+
+.error {
+    color: #dc3545; /* Updated to match booking module */
+    font-weight: bold;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .container {
+        padding: 0 1rem;
+    }
+    
+    .pageTitle {
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .profileDetails {
+        padding: 1.5rem;
+    }
+    
+    .profileBody {
+        gap: 1.5rem;
+    }
+}

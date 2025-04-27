@@ -580,8 +580,6 @@ main {
     display: flex;
     justify-content: flex-start;
     margin-top: 10px;
-    gap: 1rem;
-
 }
 
 .book-button {
@@ -1145,148 +1143,57 @@ main {
     animation: fadeIn 0.3s ease-in-out;
 }
 
-
-
-
-
-/* Basic Header Styling (Keep or adapt your existing styles) */
-.app-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 20px;
-    background-color: #f8f9fa; /* Example background */
-    border-bottom: 1px solid #dee2e6;
-    position: relative; /* Needed if elements inside are absolutely positioned */
-    z-index: 900; /* Below overlay and menu */
-}
-
-.brand-name {
-    display: flex;
-    align-items: center;
-    font-size: 1.5rem;
-    font-weight: bold;
-}
-
-.badminton-symbol {
-    width: 30px; /* Adjust size */
-    height: 30px;
-    margin-right: 10px;
-}
-
-.menu-container {
-    /* Container for the button */
-}
-
-.menu-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    font-size: 1rem;
-    padding: 8px;
-    color: #12B886; /* Match icon color */
-}
-
-.menu-symbol {
-    width: 24px; /* Adjust size */
-    height: 24px;
-    margin-right: 5px;
-}
-
-/* --- Slide-in Menu Styles --- */
-
+/* Add these styles for the slide-in menu links */
 .slide-in-menu {
-    position: fixed; /* Position relative to the viewport */
+    position: fixed;
     top: 0;
-    right: 0; /* Start position (change to left: 0 for left slide) */
-    width: 280px; /* Width of the menu */
-    max-width: 80%; /* Max width on smaller screens */
-    height: 100vh; /* Full viewport height */
-    background-color: #ffffff; /* Menu background */
-    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.15); /* Shadow for depth */
-    padding: 20px;
-    padding-top: 50px; /* Space for close button */
-    box-sizing: border-box; /* Include padding in width/height */
-    transform: translateX(100%); /* Initially hidden off-screen to the right */
-    /* Change to translateX(-100%) if sliding from left */
-    transition: transform 0.3s ease-in-out; /* Smooth slide animation */
-    z-index: 1000; /* Ensure menu is above other content */
-    overflow-y: auto; /* Allow scrolling if content exceeds height */
+    right: -300px; /* Start off-screen */
+    width: 300px;
+    height: 100vh;
+    background-color: #ffffff;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    transition: right 0.3s ease-in-out;
+    z-index: 1000;
+    padding: 60px 20px 20px;
+    overflow-y: auto;
 }
 
 .slide-in-menu.open {
-    transform: translateX(0); /* Slide into view */
+    right: 0;
 }
-
-.slide-in-menu .close-button {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 5px;
-    line-height: 1; /* Prevent extra space */
-}
-
-.slide-in-menu .close-button img {
-    width: 20px;
-    height: 20px;
-    display: block; /* Prevents small gap below image */
-}
-
-.slide-in-menu nav {
-    margin-top: 20px;
-}
-
-.slide-in-menu nav a {
-    display: block; /* Stack links vertically */
-    padding: 12px 0; /* Spacing */
-    color: #333; /* Link color */
-    text-decoration: none;
-    font-size: 1.1rem;
-    border-bottom: 1px solid #eee; /* Separator */
-    transition: background-color 0.2s ease;
-}
-
-.slide-in-menu nav a:hover {
-    background-color: #f0f0f0; /* Hover effect */
-}
-
-.slide-in-menu nav a:last-child {
-    border-bottom: none; /* Remove border from last link */
-}
-
-/* --- Menu Overlay --- */
 
 .menu-overlay {
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
-    z-index: 999; /* Below menu, above header/content */
-    /* Add fade-in animation if desired */
-    /* animation: fadeIn 0.3s ease-in-out; */
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
 }
 
-/* Optional fade-in keyframes */
-/*
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-*/
-
-/* Hide content visually and from screen readers when menu is closed */
-.slide-in-menu[aria-hidden="true"] {
-    visibility: hidden;
+.slide-in-menu nav {
+    display: flex;
+    flex-direction: column;
+    margin-top: 20px;
 }
 
-/* Basic body scroll lock (JS handles this better, but CSS can help) */
-body.menu-open {
-    overflow: hidden;
+.slide-in-menu nav a {
+    color: #232323;
+    text-decoration: none;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 22px;
+    padding: 15px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    transition: color 0.2s ease;
+    display: block;
+}
+
+.slide-in-menu nav a:hover {
+    color: #91D800;
+}
+
+.menu-container {
+    display: flex;
+    align-items: center;
 }

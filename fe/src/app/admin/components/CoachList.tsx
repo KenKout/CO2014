@@ -1,119 +1,235 @@
-'use client';
+// src/app/admin/components/CoachList.tsx
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import styles from '../Admin.module.css'; // Ensure this path is correct
+import React, { useState, useEffect } from "react";
+import { createApiClient } from "@/utils/api";
+import styles from "@/styles/Admin.module.css";
+import { useAuth } from '@/context/AuthContext';
 
+// Update interface to match backend response model
 interface Coach {
-    coach_id: number;
-    name: string;
-    rating: number | null; // Allow null for N/A
-    experience: string | null; // Allow null for N/A
+    StaffID: number;
+    Username: string;
+    Name: string;
+    Description: string | null;
+    url: string | null; // image_url from backend
+    Phone: string | null;
+    JoinDate: string | null;
 }
-
-// --- Mock Data ---
-const mockCoachData: Coach[] = [
-    { coach_id: 201, name: 'Coach Carter', rating: 4.8, experience: '10+ Years' },
-    { coach_id: 202, name: 'Serena Williams', rating: 5.0, experience: '20+ Years Pro' },
-    { coach_id: 203, name: 'Roger Federer', rating: 4.9, experience: '20+ Years Pro' },
-    { coach_id: 204, name: 'New Coach', rating: null, experience: '1 Year' },
-];
-// --- End Mock Data ---
-
 
 const CoachList: React.FC = () => {
     const [coaches, setCoaches] = useState<Coach[]>([]);
     const [loading, setLoading] = useState(true);
-    // const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [selectedCoach, setSelectedCoach] = useState<Coach | null>(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [debugInfo, setDebugInfo] = useState<string>("");
+
+    // Get token from your auth context or localStorage
+    const { token } = useAuth();
+    const api = createApiClient(token);
 
     useEffect(() => {
-        setLoading(true);
-        // --- Simulate API Call ---
-        const fetchCoaches = async () => {
-            console.log('Simulating: Fetching coach data...');
-            // TODO: Replace this setTimeout with the actual API call
-            // Example:
-            // try {
-            //     const response = await fetch('/api/v2/admin/coaches');
-            //     if (!response.ok) throw new Error('Failed to fetch coaches');
-            //     const data = await response.json();
-            //     setCoaches(data);
-            // } catch (err) {
-            //     setError('Failed to load coach data');
-            //     console.error(err);
-            // } finally {
-            //     setLoading(false);
-            // }
-            
-            // Simulate network delay
-            setTimeout(() => {
-                setCoaches(mockCoachData);
-                setLoading(false);
-                 console.log('Simulating: Coach data loaded.');
-            }, 800); // Simulate 0.8 second delay
-        };
-        // --- End Simulate API Call ---
-
         fetchCoaches();
     }, []);
 
-     // Optional: Functions to handle actions (for demo purposes)
-    const handleSchedule = (coachId: number) => {
-        console.log(`Simulating: Schedule button clicked for coach ID: ${coachId}`);
-        alert(`Demo: View/Edit schedule for coach ${coachId}`);
-        // TODO: Implement actual schedule logic (e.g., open calendar modal)
+    const fetchCoaches = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            // Check if the API endpoint matches the backend route
+            const response = await api.get("/admin/coaches");
+            console.log("Coach data response:", response.data);
+            setDebugInfo(JSON.stringify(response.data, null, 2).substring(0, 200) + "...");
+            
+            if (Array.isArray(response.data)) {
+                setCoaches(response.data);
+            } else {
+                setError("Unexpected data format received from server");
+                console.error("Unexpected data format:", response.data);
+            }
+        } catch (err: any) {
+            console.error("Error fetching coaches:", err);
+            setError(`Failed to load coach data: ${err.message || "Unknown error"}. 
+                      Status: ${err.response?.status || "N/A"}. 
+                      Details: ${err.response?.data?.detail || "No details"}`);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleEdit = (coachId: number) => {
-        console.log(`Simulating: Edit button clicked for coach ID: ${coachId}`);
-        alert(`Demo: Edit coach ${coachId}`);
-        // TODO: Implement actual edit logic (e.g., open modal, navigate to edit page)
+    const handleEdit = async (staffId: number) => {
+        try {
+            const response = await api.get(`/admin/coaches/${staffId}`);
+            console.log("Coach detail response:", response.data);
+            setSelectedCoach(response.data);
+            setShowEditModal(true);
+        } catch (err: any) {
+            console.error("Error fetching coach details:", err);
+            alert(`Failed to load coach details: ${err.message || "Please try again."}`);
+        }
     };
 
+    const handleUpdate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedCoach) return;
 
-    if (loading) return <div className={styles.loadingIndicator}>Loading coach data...</div>;
-    // if (error) return <div className={styles.error}>{error}</div>;
+        try {
+            // Only send fields that can be updated according to backend
+            const updateData = {
+                description: selectedCoach.Description,
+                url: selectedCoach.url, // Use url as per backend requirement
+            };
+            console.log("Sending update with data:", updateData);
+            
+            const response = await api.put(`/admin/coaches/${selectedCoach.StaffID}`, updateData);
+            console.log("Update response:", response.data);
+            
+            setShowEditModal(false);
+            fetchCoaches(); // Refresh the list
+        } catch (err: any) {
+            console.error("Error updating coach:", err);
+            alert(`Failed to update coach: ${err.message || "Please try again."}`);
+        }
+    };
 
     return (
         <div className={styles.listContainer}>
             <h2>Coaches</h2>
-             {/* TODO: Add a button here for "Add New Coach" if needed */}
-            <table className={styles.dataTable}>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Rating</th>
-                        <th>Experience</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {coaches.map(coach => (
-                        <tr key={coach.coach_id}>
-                            <td>{coach.coach_id}</td>
-                            <td>{coach.name}</td>
-                            <td>{coach.rating?.toFixed(1) || 'N/A'}</td>
-                            <td>{coach.experience || 'N/A'}</td>
-                            <td>
-                                <button 
-                                    className={styles.actionButton}
-                                    onClick={() => handleSchedule(coach.coach_id)}
+            
+            {/* Debug information - remove in production */}
+            {debugInfo && (
+                <div style={{ marginBottom: '20px', padding: '10px', background: '#f5f5f5', fontSize: '12px' }}>
+                    <strong>Debug Info:</strong>
+                    <pre>{debugInfo}</pre>
+                    <button onClick={fetchCoaches}>Retry Loading</button>
+                </div>
+            )}
+            
+            {loading && (
+                <div className={styles.loadingIndicator}>Loading coach data...</div>
+            )}
+            
+            {error && (
+                <div className={styles.error}>
+                    <p>{error}</p>
+                    <button onClick={fetchCoaches}>Retry</button>
+                </div>
+            )}
+
+            {!loading && !error && (
+                <>
+                    <table className={styles.dataTable}>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Username</th>
+                                <th>Phone</th>
+                                <th>Join Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {coaches.map((coach) => (
+                                <tr key={coach.StaffID}>
+                                    <td>{coach.StaffID}</td>
+                                    <td>{coach.Name}</td>
+                                    <td>{coach.Username}</td>
+                                    <td>{coach.Phone || "N/A"}</td>
+                                    <td>{coach.JoinDate || "N/A"}</td>
+                                    <td>
+                                        <button
+                                            className={styles.actionButton}
+                                            onClick={() => handleEdit(coach.StaffID)}
+                                        >
+                                            Edit
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    {coaches.length === 0 && (
+                        <div className={styles.emptyMessage}>No coaches found.</div>
+                    )}
+                </>
+            )}
+
+            {/* Edit Coach Modal */}
+            {showEditModal && selectedCoach && (
+                <div className={styles.modalBackdrop}>
+                    <div className={styles.modal}>
+                        <h3>Edit Coach: {selectedCoach.Name}</h3>
+                        <form onSubmit={handleUpdate}>
+                            {/* Only include editable fields according to backend */}
+                            <div className={styles.formGroup}>
+                                <label htmlFor="description">Description</label>
+                                <textarea
+                                    id="description"
+                                    value={selectedCoach.Description || ""}
+                                    onChange={(e) =>
+                                        setSelectedCoach({
+                                            ...selectedCoach,
+                                            Description: e.target.value,
+                                        })
+                                    }
+                                    rows={4}
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label htmlFor="imageUrl">Image URL</label>
+                                <input
+                                    type="text"
+                                    id="imageUrl"
+                                    value={selectedCoach.url || ""}
+                                    onChange={(e) =>
+                                        setSelectedCoach({
+                                            ...selectedCoach,
+                                            url: e.target.value,
+                                        })
+                                    }
+                                />
+                            </div>
+                            {/* Display other fields as read-only */}
+                            <div className={styles.formGroup}>
+                                <label>Username</label>
+                                <input
+                                    type="text"
+                                    value={selectedCoach.Username}
+                                    disabled
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label>Phone</label>
+                                <input
+                                    type="text"
+                                    value={selectedCoach.Phone || "N/A"}
+                                    disabled
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label>Join Date</label>
+                                <input
+                                    type="text"
+                                    value={selectedCoach.JoinDate || "N/A"}
+                                    disabled
+                                />
+                            </div>
+                            <div className={styles.modalActions}>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEditModal(false)}
                                 >
-                                    Schedule
+                                    Cancel
                                 </button>
-                                <button 
-                                    className={styles.actionButton}
-                                    onClick={() => handleEdit(coach.coach_id)}
-                                >
-                                    Edit
-                                </button>
-                                {/* TODO: Add Delete button/logic here if needed */}
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-            {coaches.length === 0 && !loading && <div>No coaches found.</div>} {/* Show if empty */}
+                                <button type="submit">Update</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
