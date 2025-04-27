@@ -3,8 +3,9 @@ from fastapi import HTTPException
 from loguru import logger
 from datetime import datetime
 from typing import List, Dict, Any, Optional
+import uuid # Add uuid for unique payment description
 
-from app.models.enums import BookingStatus, CourtStatus
+from app.models.enums import BookingStatus, CourtStatus, PaymentStatus, PaymentMethod # Add PaymentMethod
 from app.database import get_db # Assuming get_db is correctly set up
 
 # --- Helper Functions to Fetch Item Details and Prices ---
@@ -175,6 +176,28 @@ def create_food_order_entry(order_id: int, food_id: int, db: pymysql.connections
         raise # Re-raise for transaction rollback
 
 
+def create_payment_entry(order_id: int, customer_id: int, total_amount: float, payment_method: PaymentMethod, db: pymysql.connections.Connection, cursor: pymysql.cursors.DictCursor) -> Dict[str, Any]:
+    """Creates an entry in the Payment table with a unique description and specified method."""
+    try:
+        payment_description = str(uuid.uuid4()) # Generate unique description
+        cursor.execute(
+            """
+            INSERT INTO Payment (OrderID, Total, Customer_ID, Method, Status, Description, Time)
+            VALUES (%s, %s, %s, %s, %s, %s, NOW())
+            """,
+            (order_id, total_amount, customer_id, payment_method.value, PaymentStatus.PENDING.value, payment_description)
+        )
+        payment_id = cursor.lastrowid
+        if not payment_id:
+             logger.error(f"Failed to retrieve lastrowid after inserting into Payment for OrderID {order_id}")
+             raise HTTPException(status_code=500, detail="Failed to create payment entry")
+        logger.info(f"Created Payment entry with ID: {payment_id} for OrderID: {order_id} with Description: {payment_description}")
+        return {"payment_id": payment_id, "payment_description": payment_description}
+    except pymysql.Error as db_err:
+        logger.error(f"Database error creating Payment entry for OrderID {order_id}: {db_err}")
+        raise # Re-raise for transaction rollback
+
+
 # --- Main Order Processing Function ---
 
 def process_order(
@@ -182,6 +205,7 @@ def process_order(
     court_orders: Optional[List[Dict[str, Any]]],
     equipment_orders: Optional[List[Dict[str, Any]]],
     food_orders: Optional[List[Dict[str, Any]]],
+    payment_method: PaymentMethod, # Add payment_method parameter
     db: pymysql.connections.Connection
 ) -> Dict[str, Any]:
     """
@@ -268,8 +292,13 @@ def process_order(
                         db=db,
                         cursor=cursor
                     )
-                    # Optional: Decrement stock here if not using triggers
-                    # cursor.execute("UPDATE Equipment SET Stock = Stock - 1 WHERE EquipmentID = %s", (equip_data['equipment_id'],))
+                    # Decrement equipment stock within the transaction
+                    cursor.execute("UPDATE Equipment SET Stock = Stock - 1 WHERE EquipmentID = %s AND Stock > 0", (equip_data['equipment_id'],))
+                    if cursor.rowcount == 0:
+                        # This means the stock was 0 or the item didn't exist, despite earlier checks.
+                        # This could happen due to a race condition.
+                        logger.error(f"Failed to decrement stock for EquipmentID {equip_data['equipment_id']} (OrderID: {order_id}). Item might be out of stock.")
+                        raise HTTPException(status_code=409, detail=f"Equipment {equip_data['equipment_id']} became unavailable during order processing.")
 
 
                 # --- Create OrderFood Entries ---
@@ -280,14 +309,34 @@ def process_order(
                         db=db,
                         cursor=cursor
                     )
-                    # Optional: Decrement stock here if not using triggers
-                    # cursor.execute("UPDATE CafeteriaFood SET Stock = Stock - 1 WHERE FoodID = %s", (food_data['food_id'],))
+                    # Decrement food stock within the transaction
+                    cursor.execute("UPDATE CafeteriaFood SET Stock = Stock - 1 WHERE FoodID = %s AND Stock > 0", (food_data['food_id'],))
+                    if cursor.rowcount == 0:
+                        # This means the stock was 0 or the item didn't exist.
+                        logger.error(f"Failed to decrement stock for FoodID {food_data['food_id']} (OrderID: {order_id}). Item might be out of stock.")
+                        raise HTTPException(status_code=409, detail=f"Food item {food_data['food_id']} became unavailable during order processing.")
 
+
+                # --- Create Payment Entry ---
+                payment_details = create_payment_entry(
+                    order_id=order_id,
+                    customer_id=customer_id,
+                    total_amount=total_amount,
+                    payment_method=payment_method, # Pass payment method
+                    db=db,
+                    cursor=cursor
+                )
 
                 # --- Commit Transaction ---
                 db.commit()
                 logger.info(f"Successfully processed and committed OrderID: {order_id} for CustomerID: {customer_id}")
-                return {"order_id": order_id, "total_amount": total_amount, "message": "Order placed successfully"}
+                return {
+                    "order_id": order_id,
+                    "total_amount": total_amount,
+                    "message": "Order placed successfully, pending payment.",
+                    "payment_id": payment_details["payment_id"],
+                    "payment_description": payment_details["payment_description"]
+                }
 
             except (pymysql.Error, HTTPException) as e:
                 db.rollback()

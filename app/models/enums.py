@@ -17,6 +17,11 @@ class BookingStatus(str, Enum):
     SUCCESS = "Success"
     CANCEL = "Cancel"
 
+class PaymentStatus(str, Enum):
+    PENDING = "Pending"
+    SUCCESS = "Success"
+    CANCEL = "Cancel"
+
 class PaymentMethod(str, Enum):
     CREDIT_CARD = "Credit Card"
     CASH = "Cash"

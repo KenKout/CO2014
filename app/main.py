@@ -26,6 +26,8 @@ from app.routers.v1.admin.equipment import admin_equipment_router # New
 from app.routers.v1.admin.enrollment import admin_enrollment_router # New
 from app.routers.v1.admin.feedback import admin_feedback_router # New
 
+from app.routers.v1.internal.payment import internal_payment_router # Import internal payment webhook router
+
 # Initialize FastAPI app
 app = FastAPI(
     title=TITLE,
@@ -65,6 +67,8 @@ app.include_router(admin_food_router, prefix="/v1/admin") # New
 app.include_router(admin_equipment_router, prefix="/v1/admin") # New
 app.include_router(admin_enrollment_router, prefix="/v1/admin") # New
 app.include_router(admin_feedback_router, prefix="/v1/admin") # New
+
+app.include_router(internal_payment_router, prefix="/v1") # Include internal payment webhook router (no auth dependency here, it's handled internally)
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])

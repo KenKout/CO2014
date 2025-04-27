@@ -91,6 +91,8 @@ CREATE TABLE `Payment` (
     `Total` INT,
     `Customer_ID` INT,
     `Method` ENUM('Credit Card', 'Cash'),
+    `Status` ENUM('Pending', 'Success', 'Cancel'),
+    `Description` TEXT,
     `Time` DATETIME,
     FOREIGN KEY (`OrderID`) REFERENCES `OrderTable`(`OrderID`),
     FOREIGN KEY (`Customer_ID`) REFERENCES `Customer`(`CustomerID`)

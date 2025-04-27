@@ -9,7 +9,7 @@ from app.database import get_db
 from app.utils.auth import get_current_user
 from app.models.user import get_customer_id_by_username
 from app.models.order import process_order, get_user_orders # Import the new function
-from app.models.enums import BookingStatus, CourtType, EquipmentType, FoodCategory # Import necessary enums
+from app.models.enums import BookingStatus, CourtType, EquipmentType, FoodCategory, PaymentMethod # Import necessary enums
 
 # Create user order router
 order_router = APIRouter(
@@ -49,6 +49,8 @@ class OrderRequest(BaseModel):
     equipment_orders: Optional[List[EquipmentOrderItem]] = None
     food_orders: Optional[List[FoodOrderItem]] = None
 
+    payment_method: Optional[PaymentMethod] = Field(PaymentMethod.CREDIT_CARD, description="Payment method chosen by the user") # Default to Credit Card
+
     @model_validator(mode='after')
     def check_at_least_one_order_type(self) -> 'OrderRequest':
         if not self.court_orders and not self.equipment_orders and not self.food_orders:
@@ -63,6 +65,8 @@ class OrderResponse(BaseModel):
     order_id: int
     total_amount: float
     message: str
+    payment_id: int
+    payment_description: str
 
 
 # --- Pydantic Models for GET / Response ---
@@ -147,11 +151,13 @@ async def create_user_order(
             court_orders=court_orders_dict,
             equipment_orders=equipment_orders_dict,
             food_orders=food_orders_dict,
-            db=db
+            db=db,
+            payment_method=order_data.payment_method # Pass payment method
         )
         # process_order raises HTTPException on validation/processing errors
 
         logger.info(f"Order {result['order_id']} created successfully for CustomerID: {customer_id}")
+        # The result dictionary now contains order_id, total_amount, message, payment_id, payment_description
         return OrderResponse(**result)
 
     except HTTPException as e:
