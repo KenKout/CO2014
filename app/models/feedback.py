@@ -20,7 +20,7 @@ def get_all_feedback_admin(
             base_sql = """
             SELECT 
                 fb.FeedbackID, fb.CustomerID, fb.Content, fb.Title, 
-                fb.ON, fb.Rate, fb.CourtID, fb.SessionID,
+                fb.ON, fb.Rate, fb.CourtID, fb.SessionID, fb.OrderID,
                 c.Name as CustomerName,
                 ct.Type as CourtType, -- For Court feedback
                 ts.Type as SessionType, ts.StartDate as SessionStartDate -- For Session feedback
@@ -96,7 +96,7 @@ def get_feedback_by_id_admin(feedback_id: int, db: pymysql.connections.Connectio
             sql = """
             SELECT 
                 fb.FeedbackID, fb.CustomerID, fb.Content, fb.Title, 
-                fb.ON, fb.Rate, fb.CourtID, fb.SessionID,
+                fb.ON, fb.Rate, fb.CourtID, fb.SessionID, fb.OrderID,
                 c.Name as CustomerName,
                 ct.Type as CourtType, -- For Court feedback
                 ts.Type as SessionType, ts.StartDate as SessionStartDate -- For Session feedback

@@ -39,6 +39,7 @@ class FeedbackDetailResponse(BaseModel):
     Rate: Optional[int] = None
     CourtID: Optional[int] = None
     SessionID: Optional[int] = None
+    OrderID: Optional[int] = None
     # Consider adding Customer Name, Court/Session details
     CustomerName: Optional[str] = None
     TargetDetails: Optional[str] = None # e.g., "Court 5" or "Beginner Session (ID: 101)"
