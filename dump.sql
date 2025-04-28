@@ -187,7 +187,8 @@ DELIMITER //
 
 CREATE PROCEDURE GetAllEquipment()
 BEGIN
-    SELECT * FROM Equipment;
+    SELECT EquipmentID, Price, Type, Stock, Name, Brand, url
+                FROM Equipment;
 END //
 
 DELIMITER ;

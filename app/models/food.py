@@ -22,8 +22,7 @@ def get_all_food(db: pymysql.connections.Connection) -> List[Dict[str, Any]]:
         with db.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT FoodID, Stock, Name, Category, Price, url
-                FROM CafeteriaFood
+                CALL GetAllCafeteriaFood()
                 """
             )
             food_items = cursor.fetchall()

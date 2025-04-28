@@ -23,8 +23,7 @@ def get_all_equipment(db: pymysql.connections.Connection) -> List[Dict[str, Any]
         with db.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT EquipmentID, Price, Type, Stock, Name, Brand, url
-                FROM Equipment
+                CALL GetAllEquipment()
                 """
             )
             equipment = cursor.fetchall()
