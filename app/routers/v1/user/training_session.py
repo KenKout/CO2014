@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, status, Body
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import pymysql
 from loguru import logger
 from datetime import datetime
@@ -10,8 +10,16 @@ from app.utils.auth import get_current_user
 from app.models.user import get_customer_id_by_username
 from app.models.training_session import get_training_session_by_id, get_training_sessions_by_customer_id # Added import
 from app.models.enroll import get_enrollment_count, is_user_enrolled, enroll_user_in_session
+from app.models.enums import PaymentMethod # Import PaymentMethod
 
-# Create router
+
+# --- Pydantic Models ---
+
+# Request model
+class EnrollRequest(BaseModel):
+    payment_method: Optional[PaymentMethod] = Field(PaymentMethod.CREDIT_CARD, description="Payment method for the enrollment")
+
+# Pydantic model for response
 router = APIRouter(
     prefix="/training-sessions",
     tags=["User Training Sessions"],
@@ -22,6 +30,8 @@ router = APIRouter(
 class EnrollResponse(BaseModel):
     message: str
     order_id: int
+    payment_id: int
+    payment_description: str
 
 # Pydantic model for GET /my-sessions response
 class UserTrainingSessionResponse(BaseModel):
@@ -42,6 +52,7 @@ class UserTrainingSessionResponse(BaseModel):
 @router.post("/{session_id}/enroll", response_model=EnrollResponse, status_code=status.HTTP_201_CREATED)
 async def enroll_in_training_session(
     session_id: int = Path(..., description="The ID of the training session to enroll in", gt=0),
+    enroll_data: EnrollRequest = Body(...), # Use the request model
     db: pymysql.connections.Connection = Depends(get_db),
     current_user: dict = Depends(get_current_user) # Requires user authentication
 ):
@@ -77,11 +88,22 @@ async def enroll_in_training_session(
             logger.warning(f"Enrollment failed: Session {session_id} is full (Enrolled: {current_enrollments}, Max: {session['Max_Students']}). User: {username}")
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This training session is full.")
 
-        # 6. Perform enrollment (creates order and enroll record)
-        order_id = enroll_user_in_session(customer_id, session_id, session['Price'], db)
+        # 6. Perform enrollment (creates order, payment, and enroll record)
+        enrollment_result = enroll_user_in_session(
+            customer_id=customer_id,
+            session_id=session_id,
+            price=session['Price'],
+            payment_method=enroll_data.payment_method, # Pass payment method from request model
+            db=db
+        )
 
-        logger.info(f"User '{username}' (CustomerID: {customer_id}) successfully enrolled in session {session_id}. OrderID: {order_id}")
-        return {"message": "Successfully enrolled in training session", "order_id": order_id}
+        logger.info(f"User '{username}' (CustomerID: {customer_id}) successfully enrolled in session {session_id}. OrderID: {enrollment_result['order_id']}, PaymentID: {enrollment_result['payment_id']}")
+        return {
+            "message": "Successfully enrolled in training session",
+            "order_id": enrollment_result['order_id'],
+            "payment_id": enrollment_result['payment_id'],
+            "payment_description": enrollment_result['payment_description']
+        }
 
     except HTTPException as http_exc:
         # Re-raise HTTPExceptions (like 404 Not Found from models, or specific ones raised above)

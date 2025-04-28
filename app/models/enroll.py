@@ -3,6 +3,8 @@ from fastapi import HTTPException
 from loguru import logger
 from datetime import datetime
 from typing import List, Dict, Any, Optional
+import uuid # Add uuid for unique payment description
+from app.models.enums import PaymentMethod, PaymentStatus # Add Payment enums
 
 def get_enrollment_count(session_id: int, db: pymysql.connections.Connection) -> int:
     """
@@ -35,10 +37,10 @@ def is_user_enrolled(customer_id: int, session_id: int, db: pymysql.connections.
         logger.exception(f"Unexpected error checking enrollment for customer {customer_id}, session {session_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-def enroll_user_in_session(customer_id: int, session_id: int, price: int, db: pymysql.connections.Connection) -> int:
+def enroll_user_in_session(customer_id: int, session_id: int, price: int, payment_method: PaymentMethod, db: pymysql.connections.Connection) -> Dict[str, Any]:
     """
     Enroll a user in a training session by creating an order and an enrollment record.
-    Returns the OrderID.
+    Returns a dictionary containing the OrderID, PaymentID, and Payment Description.
     Uses a transaction to ensure atomicity.
     """
     try:
@@ -60,7 +62,24 @@ def enroll_user_in_session(customer_id: int, session_id: int, price: int, db: py
                  db.rollback()
                  raise HTTPException(status_code=500, detail="Failed to create order record")
 
-            # 2. Create Enrollment in Enroll table
+            # 2. Create Payment Entry
+            payment_description = str(uuid.uuid4()) # Generate unique description
+            cursor.execute(
+                """
+                INSERT INTO Payment (OrderID, Total, Customer_ID, Method, Status, Description, Time)
+                VALUES (%s, %s, %s, %s, %s, %s, NOW())
+                """,
+                (order_id, price, customer_id, payment_method.value, PaymentStatus.PENDING.value, payment_description)
+            )
+            payment_id = cursor.lastrowid
+            if not payment_id:
+                 logger.error(f"Failed to retrieve PaymentID after insert for order {order_id}")
+                 db.rollback()
+                 raise HTTPException(status_code=500, detail="Failed to create payment record")
+            logger.info(f"Created Payment entry with ID: {payment_id} for OrderID: {order_id} with Description: {payment_description}")
+
+
+            # 3. Create Enrollment in Enroll table
             cursor.execute(
                 """
                 INSERT INTO Enroll (CustomerID, SessionID)
@@ -71,8 +90,12 @@ def enroll_user_in_session(customer_id: int, session_id: int, price: int, db: py
 
             # Commit transaction
             db.commit()
-            logger.info(f"Customer {customer_id} successfully enrolled in session {session_id}. OrderID: {order_id}")
-            return order_id
+            logger.info(f"Customer {customer_id} successfully enrolled in session {session_id}. OrderID: {order_id}, PaymentID: {payment_id}")
+            return {
+                "order_id": order_id,
+                "payment_id": payment_id,
+                "payment_description": payment_description
+            }
 
     except pymysql.err.IntegrityError as integrity_err:
         db.rollback()
