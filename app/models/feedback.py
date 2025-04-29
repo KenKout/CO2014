@@ -20,7 +20,7 @@ def get_all_feedback_admin(
             base_sql = """
             SELECT 
                 fb.FeedbackID, fb.CustomerID, fb.Content, fb.Title, 
-                fb.ON, fb.Rate, fb.CourtID, fb.SessionID,
+                fb.ON, fb.Rate, fb.CourtID, fb.SessionID, fb.OrderID,
                 c.Name as CustomerName,
                 ct.Type as CourtType, -- For Court feedback
                 ts.Type as SessionType, ts.StartDate as SessionStartDate -- For Session feedback
@@ -93,19 +93,7 @@ def get_feedback_by_id_admin(feedback_id: int, db: pymysql.connections.Connectio
     feedback = None
     try:
         with db.cursor() as cursor:
-            sql = """
-            SELECT 
-                fb.FeedbackID, fb.CustomerID, fb.Content, fb.Title, 
-                fb.ON, fb.Rate, fb.CourtID, fb.SessionID,
-                c.Name as CustomerName,
-                ct.Type as CourtType, -- For Court feedback
-                ts.Type as SessionType, ts.StartDate as SessionStartDate -- For Session feedback
-            FROM FeedBack fb -- Note: Table name is FeedBack in dump.sql
-            LEFT JOIN Customer c ON fb.CustomerID = c.CustomerID
-            LEFT JOIN Court ct ON fb.CourtID = ct.Court_ID AND fb.ON = 'Court'
-            LEFT JOIN Training_Session ts ON fb.SessionID = ts.SessionID AND fb.ON = 'Session'
-            WHERE fb.FeedbackID = %s
-            """
+            sql = """CALL GetFeedbackByIdAdmin(%s)"""
             cursor.execute(sql, (feedback_id,))
             feedback = cursor.fetchone()
 

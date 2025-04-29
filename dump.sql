@@ -16,7 +16,7 @@ CREATE TABLE `Customer` (
     FOREIGN KEY (`Username`) REFERENCES `User`(`Username`)
 );
 
--- Staff Table
+-- Staff Table  
 CREATE TABLE `Staff` (
     `StaffID` INT PRIMARY KEY AUTO_INCREMENT,
     `Username` VARCHAR(100),
@@ -170,6 +170,7 @@ CREATE TABLE `FeedBack` (
     FOREIGN KEY (`CustomerID`) REFERENCES `Customer`(`CustomerID`),
     FOREIGN KEY (`CourtID`) REFERENCES `Court`(`Court_ID`),
     FOREIGN KEY (`SessionID`) REFERENCES `Training_Session`(`SessionID`)
+    FOREIGN KEY (`OrderID`) REFERENCES `OrderTable`(`OrderID`),
 );
 
 
@@ -187,7 +188,8 @@ DELIMITER //
 
 CREATE PROCEDURE GetAllEquipment()
 BEGIN
-    SELECT * FROM Equipment;
+    SELECT EquipmentID, Price, Type, Stock, Name, Brand, url
+                FROM Equipment;
 END //
 
 DELIMITER ;
@@ -269,5 +271,27 @@ BEGIN
         WHERE SessionID = NEW.SessionID;
     END IF;
 END$$
+
+DELIMITER ;
+
+-- trigger to get feedback rating by admin
+DELIMITER //
+
+CREATE PROCEDURE GetFeedbackByIdAdmin(
+    IN p_feedback_id INT
+)
+BEGIN
+    SELECT 
+        fb.FeedbackID, fb.CustomerID, fb.Content, fb.Title, 
+        fb.ON, fb.Rate, fb.CourtID, fb.SessionID, fb.OrderID,
+        c.Name AS CustomerName,
+        ct.Type AS CourtType, -- For Court feedback
+        ts.Type AS SessionType, ts.StartDate AS SessionStartDate -- For Session feedback
+    FROM FeedBack fb
+    LEFT JOIN Customer c ON fb.CustomerID = c.CustomerID
+    LEFT JOIN Court ct ON fb.CourtID = ct.Court_ID AND fb.ON = 'Court'
+    LEFT JOIN Training_Session ts ON fb.SessionID = ts.SessionID AND fb.ON = 'Session'
+    WHERE fb.FeedbackID = p_feedback_id;
+END //
 
 DELIMITER ;

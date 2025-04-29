@@ -15,6 +15,7 @@ from app.routers.v1.public.equipment import equipment_router
 from app.routers.v1.public.food import food_router
 from app.routers.v1.user.order import order_router as router_user_order # Import user order router
 from app.routers.v1.user.training_session import router as router_user_training_session # Import user training session router
+from app.routers.v1.user.feedback import feedback_router # Import user feedback router
 # Import admin routers
 from app.routers.v1.admin.user import admin_user_router
 from app.routers.v1.admin.staff import admin_staff_router
@@ -57,6 +58,7 @@ app.include_router(equipment_router, prefix="/v1/public")
 app.include_router(food_router, prefix="/v1/public")
 app.include_router(router_user_order, prefix="/v1/user", dependencies=[Depends(get_current_user)]) # Include user order router with auth dependency
 app.include_router(router_user_training_session, prefix="/v1/user", dependencies=[Depends(get_current_user)]) # Include user training session router with auth dependency
+app.include_router(feedback_router, prefix="/v1/user", dependencies=[Depends(get_current_user)]) # Include user feedback router with auth dependency
 # Include admin routers
 app.include_router(admin_user_router, prefix="/v1/admin")
 app.include_router(admin_staff_router, prefix="/v1/admin")
