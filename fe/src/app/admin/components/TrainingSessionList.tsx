@@ -1,12 +1,12 @@
 // src/app/admin/components/TrainingSessionList.tsx
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react"; // Added useCallback
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { createApiClient } from "@/utils/api";
 import styles from "@/styles/Admin.module.css";
 import { useAuth } from '@/context/AuthContext';
 
-// --- Interfaces (Keep ScheduleSlot if you manage slots in the form) ---
+// --- Interfaces ---
 interface ScheduleSlot {
     StartTime: string;
     EndTime: string;
@@ -18,7 +18,6 @@ interface TrainingSession extends TrainingSessionAdminResponseBase {
 }
 
 // Interface for the base structure matching backend AdminTrainingSessionResponse
-// Useful for defining form state structure
 interface TrainingSessionAdminResponseBase {
     SessionID: number;
     StartDate: string;
@@ -38,20 +37,17 @@ interface TrainingSessionAdminResponseBase {
 }
 
 // Interface for the form data (strings for inputs, matching base structure)
-// Handles both create and edit modes
 interface SessionFormData {
-    SessionID: string; // Required for create, used as key but not sent in PUT body
     StartDate: string; // Format: yyyy-MM-ddTHH:mm
     EndDate: string;   // Format: yyyy-MM-ddTHH:mm
     CoachID: string;
     CourtID: string;
-    Type: "Beginner" | "Intermediate" | "Advanced"; // Match backend enum values
-    Status: "Available" | "Unavailable"; // Match backend enum values
+    Type: "Beginner" | "Intermediate" | "Advanced";
+    Status: "Available" | "Unavailable";
     Price: string;
     Max_Students: string;
     Schedule: string;
     Rating: string; // Keep as string for input
-    // Add schedule_slots management if needed for form
     schedule_slots: ScheduleSlotFormData[];
 }
 
@@ -61,15 +57,14 @@ interface ScheduleSlotFormData {
     EndTime: string;   // Format: yyyy-MM-ddTHH:mm
 }
 
-// --- Initial state for the form (create/edit) ---
+// --- Initial state for the form ---
 const initialFormData: SessionFormData = {
-    SessionID: "",
     StartDate: "",
     EndDate: "",
     CoachID: "",
     CourtID: "",
-    Type: "Beginner", // Updated to match backend enum
-    Status: "Available", // Updated to match backend enum
+    Type: "Beginner",
+    Status: "Available",
     Price: "0",
     Max_Students: "10",
     Schedule: "",
@@ -82,10 +77,8 @@ const formatDateTimeLocal = (isoString?: string | null): string => {
     if (!isoString) return '';
     try {
         const date = new Date(isoString);
-        // Check if date is valid
         if (isNaN(date.getTime())) return '';
-        // Adjust for timezone offset to display correctly in local time input
-        const timezoneOffset = date.getTimezoneOffset() * 60000; // offset in milliseconds
+        const timezoneOffset = date.getTimezoneOffset() * 60000;
         const localISOTime = new Date(date.getTime() - timezoneOffset)
             .toISOString()
             .slice(0, 16);
@@ -96,6 +89,7 @@ const formatDateTimeLocal = (isoString?: string | null): string => {
     }
 };
 
+// Helper function to format price to VND currency
 const formatVND = (price: number): string => {
     return new Intl.NumberFormat('vi-VN', {
         style: 'currency',
@@ -120,49 +114,65 @@ const formatFormDateTimeISO = (formDateTime: string): string | null => {
         return new Date(formDateTime).toISOString();
     } catch (e) {
         console.error("Error formatting form date to ISO:", formDateTime, e);
-        return null; // Indicate error or handle appropriately
+        return null;
     }
 };
 
+// --- Component ---
 const TrainingSessionList: React.FC = () => {
     const [sessions, setSessions] = useState<TrainingSession[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // --- Modal and Form State ---
+    // Modal and Form State
     const [showModal, setShowModal] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [formData, setFormData] = useState<SessionFormData>(initialFormData);
-    const [currentSessionId, setCurrentSessionId] = useState<number | null>(null); // Track ID being edited
+    const [currentSessionId, setCurrentSessionId] = useState<number | null>(null);
 
     const { token } = useAuth();
-    const api = createApiClient(token);
+    const api = useMemo(() => createApiClient(token), [token]);
 
-    const fetchSessions = useCallback(async () => { // Wrap in useCallback
+    // Fetch Sessions Function (with Cache-Busting)
+    const fetchSessions = useCallback(async () => {
         setLoading(true);
-        setError(null); // Clear previous errors
+        setError(null);
         try {
-            const response = await api.get("/admin/training-sessions/");
+            const response = await api.get("/admin/training-sessions/", {
+                // Add cache-busting headers
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0',
+                },
+            });
             console.log("Fetched sessions:", response.data);
-            setSessions(response.data || []);
+            setSessions(Array.isArray(response.data) ? response.data : []);
         } catch (err) {
             console.error("Error fetching training sessions:", err);
             setError("Failed to load training sessions. Please try again.");
-            setSessions([]);
+            setSessions([]); // Clear sessions on error
         } finally {
             setLoading(false);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [api]); // Dependency: api instance (if it can change based on token)
+    }, [api]); // Dependency: memoized api instance
 
+    // Effect to fetch sessions when token is available or changes
     useEffect(() => {
-        fetchSessions();
-    }, [fetchSessions]); // Fetch on initial mount and when fetchSessions changes
+        if (token) {
+            fetchSessions();
+        } else {
+            setLoading(false);
+            setError("Please log in to view training sessions.");
+            setSessions([]);
+        }
+    }, [fetchSessions, token]);
 
     // --- Modal Open/Close Handlers ---
     const handleOpenCreateModal = () => {
         setIsEditMode(false);
-        setFormData(initialFormData); // Reset form for create
+        setFormData(initialFormData);
         setCurrentSessionId(null);
         setShowModal(true);
     };
@@ -170,15 +180,13 @@ const TrainingSessionList: React.FC = () => {
     const handleOpenEditModal = (session: TrainingSession) => {
         setIsEditMode(true);
         setCurrentSessionId(session.SessionID);
-        // Populate form data from the session, formatting dates and slots
         setFormData({
-            SessionID: session.SessionID.toString(), // Keep SessionID for reference if needed, but don't send in PUT body
             StartDate: formatDateTimeLocal(session.StartDate),
             EndDate: formatDateTimeLocal(session.EndDate),
             CoachID: session.CoachID.toString(),
             CourtID: session.CourtID.toString(),
-            Type: session.Type, // This will now correctly match the backend enum
-            Status: session.Status, // This will now correctly match the backend enum
+            Type: session.Type,
+            Status: session.Status,
             Price: session.Price.toString(),
             Max_Students: session.Max_Students.toString(),
             Schedule: session.Schedule || "",
@@ -190,8 +198,9 @@ const TrainingSessionList: React.FC = () => {
 
     const handleCloseModal = () => {
         setShowModal(false);
-        // Consider resetting form state here if desired when modal closes unexpectedly
+        // Optional: Reset form data when modal is closed
         // setFormData(initialFormData);
+        // setCurrentSessionId(null);
     };
 
     // --- Form Input Change Handler ---
@@ -230,8 +239,7 @@ const TrainingSessionList: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // --- Prepare Payload ---
-        // Base payload structure, adjust fields based on edit/create
+        // Prepare Payload
         const basePayload = {
             StartDate: formatFormDateTimeISO(formData.StartDate),
             EndDate: formatFormDateTimeISO(formData.EndDate),
@@ -241,16 +249,15 @@ const TrainingSessionList: React.FC = () => {
             Status: formData.Status,
             Price: parseInt(formData.Price, 10),
             Max_Students: parseInt(formData.Max_Students, 10),
-            Schedule: formData.Schedule.trim() || null, // Send null if empty/whitespace only
-            Rating: formData.Rating === "" ? null : parseFloat(formData.Rating), // Allow null rating
-             // Format slots for backend
+            Schedule: formData.Schedule.trim() || null,
+            Rating: formData.Rating === "" ? null : parseFloat(formData.Rating),
             schedule_slots: formData.schedule_slots.map(slot => ({
                     StartTime: formatFormDateTimeISO(slot.StartTime),
                     EndTime: formatFormDateTimeISO(slot.EndTime)
-            })).filter(slot => slot.StartTime && slot.EndTime), // Ensure both dates are valid after formatting
+            })).filter(slot => slot.StartTime && slot.EndTime),
         };
 
-        // --- Validation (Example) ---
+        // Validation (Example)
         if (isNaN(basePayload.CoachID) || basePayload.CoachID <= 0) return alert("Invalid Coach ID.");
         if (isNaN(basePayload.CourtID) || basePayload.CourtID <= 0) return alert("Invalid Court ID.");
         if (isNaN(basePayload.Price) || basePayload.Price < 0) return alert("Invalid Price.");
@@ -258,31 +265,19 @@ const TrainingSessionList: React.FC = () => {
         if (!basePayload.StartDate || !basePayload.EndDate) return alert("Start and End Date/Time are required.");
         if (new Date(basePayload.EndDate) <= new Date(basePayload.StartDate)) return alert("End Date/Time must be after Start Date/Time.");
         if (basePayload.Rating !== null && (isNaN(basePayload.Rating) || basePayload.Rating < 0 || basePayload.Rating > 5)) return alert("Invalid Rating (must be 0-5 or empty).");
-        // Validate schedule slots are within session bounds (complex, do on backend or add FE logic)
-
+        // TODO: Add validation for schedule slots within session bounds if needed on frontend
 
         try {
             if (isEditMode && currentSessionId) {
-                // --- UPDATE (PUT) ---
-                // Backend expects only fields to update, but sending all is often fine
-                // if the Pydantic model handles exclude_unset=True or similar.
-                // Let's send all fields compatible with AdminTrainingSessionUpdateRequest.
                 await api.put(`/admin/training-sessions/${currentSessionId}`, basePayload);
                 alert("Session updated successfully!");
             } else {
-                // --- CREATE (POST) ---
-                const sessionIdNum = parseInt(formData.SessionID, 10);
-                if (isNaN(sessionIdNum) || sessionIdNum <= 0) return alert("Valid Session ID is required for creation.");
-
-                const createPayload = {
-                    ...basePayload,
-                    SessionID: sessionIdNum, // Add SessionID only for create
-                };
+                const createPayload = { ...basePayload }; // SessionID is not sent
                 await api.post("/admin/training-sessions/", createPayload);
-                 alert("Session created successfully!");
+                alert("Session created successfully!");
             }
             handleCloseModal();
-            fetchSessions(); // Refresh list
+            fetchSessions(); // Refresh list after create/update
         } catch (err: any) {
             console.error(`Error ${isEditMode ? 'updating' : 'creating'} session:`, err);
             const errorMsg = err.response?.data?.detail || `Failed to ${isEditMode ? 'update' : 'create'} session.`;
@@ -291,31 +286,44 @@ const TrainingSessionList: React.FC = () => {
     };
 
 
-    // --- Delete Handler ---
+    // --- Delete Handler (with Optimistic UI Update) ---
     const handleDeleteSession = async (sessionId: number) => {
         if (window.confirm(`Are you sure you want to delete training session ID: ${sessionId}?`)) {
-            // Optional: Indicate loading specific to delete if needed
             try {
+                // 1. Make the API call to delete the session
                 await api.delete(`/admin/training-sessions/${sessionId}`);
+
+                // 2. **IMMEDIATELY** update the local state to remove the session (Optimistic UI)
+                setSessions(prevSessions =>
+                    prevSessions.filter(session => session.SessionID !== sessionId)
+                );
+
+                // 3. Show success message
                 alert(`Training session ${sessionId} deleted successfully.`);
-                fetchSessions(); // Refresh list from server
+
+                // 4. Optional: Fetch to synchronize, but UI is already updated.
+                // fetchSessions(); // Uncomment if absolute server sync is needed after delete
+
             } catch (err: any) {
                 console.error("Error deleting training session:", err);
                 const errorMsg = err.response?.data?.detail || "Failed to delete session.";
                 alert(`Error: ${errorMsg}`);
+                // If the delete failed, the optimistic update was wrong.
+                // Re-fetch the data to correct the UI state.
+                fetchSessions();
             }
         }
     };
 
     // --- Loading and Error States ---
-    if (loading && sessions.length === 0) // Show loading only on initial load or full refresh
+    if (loading && sessions.length === 0)
         return <div className={styles.loadingIndicator}>Loading training sessions...</div>;
     if (error) return <div className={styles.error}>{error}</div>;
 
     // --- Main Component Render ---
     return (
         <div className={styles.listContainer}>
-            {/* --- Header --- */}
+            {/* Header */}
             <div className={styles.listHeader}>
                 <h2>Training Session Management</h2>
                 <button className={styles.addButton} onClick={handleOpenCreateModal}>
@@ -323,7 +331,7 @@ const TrainingSessionList: React.FC = () => {
                 </button>
             </div>
 
-            {/* --- Sessions Table --- */}
+            {/* Sessions Table */}
             <table className={styles.dataTable}>
                 <thead>
                     <tr>
@@ -336,7 +344,7 @@ const TrainingSessionList: React.FC = () => {
                         <th>Capacity</th>
                         <th>Price</th>
                         <th>Status</th>
-                         <th>Slots</th> {/* Added Schedule Slots column */}
+                        <th>Slots</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -356,54 +364,35 @@ const TrainingSessionList: React.FC = () => {
                                     {session.Status}
                                 </span>
                             </td>
-                             {/* Display number of schedule slots */}
-                             <td>{session.schedule_slots?.length || 0}</td>
+                            <td>{session.schedule_slots?.length || 0}</td>
                             <td>
-                                {/* EDIT Button */}
-                                <button
-                                    className={styles.actionButton}
-                                    onClick={() => handleOpenEditModal(session)}
-                                >
-                                    Edit
-                                </button>
-                                {/* DELETE Button */}
-                                <button
-                                    className={`${styles.actionButton} ${styles.deleteButton}`}
-                                    onClick={() => handleDeleteSession(session.SessionID)}
-                                >
-                                    Delete
-                                </button>
+                                <button className={styles.actionButton} onClick={() => handleOpenEditModal(session)}>Edit</button>
+                                <button className={`${styles.actionButton} ${styles.deleteButton}`} onClick={() => handleDeleteSession(session.SessionID)}>Delete</button>
                             </td>
                         </tr>
                     ))}
                 </tbody>
             </table>
 
-            {/* --- Empty State --- */}
+            {/* Empty State */}
             {sessions.length === 0 && !loading && (
                 <div className={styles.emptyMessage}>
                     No training sessions found.
                 </div>
             )}
 
-             {/* --- Add/Edit Modal --- */}
+             {/* Add/Edit Modal */}
             {showModal && (
                 <div className={styles.modalBackdrop}>
                     <div className={styles.modal}>
                         <h3>{isEditMode ? 'Edit Training Session' : 'Add New Training Session'}</h3>
                         <form onSubmit={handleSubmit}>
-                            {/* --- Form Fields --- */}
-                            {/* SessionID (only for create, maybe show disabled for edit) */}
-                            {!isEditMode ? (
-                                <div className={styles.formGroup}>
-                                    <label htmlFor="SessionID">Session ID*</label>
-                                    <input type="number" id="SessionID" name="SessionID" value={formData.SessionID} onChange={handleFormChange} min="1" required={!isEditMode}/>
-                                </div>
-                            ) : (
+                            {/* Show Session ID for Edit mode (read-only) */}
+                            {isEditMode && currentSessionId && (
                                  <p>Editing Session ID: <strong>{currentSessionId}</strong></p>
                             )}
 
-                            {/* Other fields reuse the same structure */}
+                            {/* Form Fields */}
                             <div className={styles.formGroup}>
                                 <label htmlFor="Type">Type*</label>
                                 <select id="Type" name="Type" value={formData.Type} onChange={handleFormChange} required>
@@ -434,11 +423,11 @@ const TrainingSessionList: React.FC = () => {
                             </div>
                             <div className={styles.formGroup}>
                                 <label htmlFor="Price">Price (VND)*</label>
-                                <input type="number" id="Price" name="Price" value={formData.Price} onChange={handleFormChange} min="0" step="1" required/> {/* Backend expects int */}
+                                <input type="number" id="Price" name="Price" value={formData.Price} onChange={handleFormChange} min="0" step="1" required/>
                             </div>
                             <div className={styles.formGroup}>
                                 <label htmlFor="Status">Status*</label>
-                                <select id="Status" name="Status" value={formData.Price} onChange={handleFormChange} required>
+                                <select id="Status" name="Status" value={formData.Status} onChange={handleFormChange} required>
                                     <option value="Available">Available</option>
                                     <option value="Unavailable">Unavailable</option>
                                 </select>
@@ -452,7 +441,7 @@ const TrainingSessionList: React.FC = () => {
                                 <textarea id="Schedule" name="Schedule" value={formData.Schedule} onChange={handleFormChange} rows={2}/>
                             </div>
 
-                           {/* --- Schedule Slots Input --- */}
+                           {/* Schedule Slots Input */}
                            <div className={styles.formGroup}>
                                 <label>Schedule Slots (Optional)</label>
                                 {formData.schedule_slots.map((slot, index) => (
@@ -475,8 +464,7 @@ const TrainingSessionList: React.FC = () => {
                                 <button type="button" onClick={addSlot} className={styles.addSlotButton}>Add Time Slot</button>
                            </div>
 
-
-                            {/* --- Modal Actions --- */}
+                            {/* Modal Actions */}
                             <div className={styles.modalActions}>
                                 <button type="button" className={styles.cancelButton} onClick={handleCloseModal}>
                                     Cancel

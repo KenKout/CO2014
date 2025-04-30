@@ -1,243 +1,463 @@
+/* General Dashboard Container */
 .dashboardContainer {
-    padding: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
+    padding: 2rem 2.5rem; /* Increased padding */
+    max-width: 1400px; /* Wider max-width */
+    margin: 0 0; /* Removed top and bottom margin */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; /* Consistent font */
+    background-color: #f9fafb; /* Light background for the page */
+    min-height: calc(100vh - 4rem); /* Ensure it takes height */
 }
 
+.dashboardTitle {
+    font-size: 1.75rem; /* Slightly larger title */
+    font-weight: 600;
+    color: #111827; /* Darker title color */
+    margin-bottom: 1.5rem;
+}
+
+/* Tab Navigation */
 .tabNav {
-    margin-bottom: 2rem;
-    border-bottom: 2px solid #e5e7eb;
+    margin-bottom: 0rem; /* Reduced spacing */
+    border-bottom: 1px solid #d1d5db; /* Lighter border */
 }
 
 .tabButton {
-    padding: 0.75rem 1.5rem;
-    margin-right: 0.5rem;
+    padding: 0.75rem 1.25rem; /* Adjusted padding */
+    margin-right: 0.25rem; /* Reduced margin */
     border: none;
     background: none;
-    font-size: 1rem;
+    font-size: 0.95rem; /* Slightly smaller font */
+    font-weight: 500; /* Medium weight */
+    color: #4b5563; /* Default tab color */
     cursor: pointer;
     position: relative;
+    transition: color 0.2s ease-in-out;
+    border-bottom: 3px solid transparent; /* Placeholder for active indicator */
+    margin-bottom: -1px; /* Align with container border */
+}
+
+.tabButton:hover {
+    color: #1f2937; /* Darker hover color */
 }
 
 .tabButton.active {
-    color: #2563eb;
-    font-weight: 600;
+    color: #3b82f6; /* Primary color for active tab */
+    font-weight: 600; /* Bold active tab */
+    border-bottom-color: #3b82f6; /* Active indicator */
 }
 
-.tabButton.active::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background-color: #2563eb;
+/* Remove ::after pseudo-element style */
+/* .tabButton.active::after { ... } */
+
+/* Content Area */
+.content {
+    /* Styles for the main content area where lists are rendered */
+    padding: 1.5rem 0; /* Adjusted padding */
 }
 
+/* List Container (Card-like appearance) */
 .listContainer {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    padding: 1.5rem;
+    background: #ffffff; /* White background */
+    border-radius: 12px; /* More rounded corners */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Softer shadow */
+    padding: 2rem; /* Increased padding */
+    overflow: hidden; /* Ensure content respects border-radius */
 }
 
 .listHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem; /* Increased spacing */
+    padding-bottom: 1rem; /* Add padding below header */
+    border-bottom: 1px solid #e5e7eb; /* Separator */
+}
+
+.listContainer .listHeader h2 { /* Increased specificity */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; /* Explicit font */
+    font-size: 1.25rem; /* Consistent size */
+    font-weight: bold; /* Consistent weight */
+    color: #1f2937; /* Consistent color */
+    margin: 0; /* Reset margin */
+}
+
+/* Buttons */
+.addButton,
+.actionButton,
+.modalActions button {
+    padding: 0.6rem 1.2rem; /* Consistent padding */
+    border-radius: 6px; /* Slightly more rounded */
+    font-weight: 500;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out, box-shadow 0.1s ease-in-out;
+    border: 1px solid transparent; /* Base border */
+    line-height: 1.2; /* Ensure text vertical alignment */
 }
 
 .addButton {
-    padding: 0.5rem 1rem;
-    background-color: #2563eb;
+    background-color: #3b82f6; /* Primary blue */
     color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background-color 0.2s;
+    border-color: #3b82f6;
 }
 
 .addButton:hover {
-    background-color: #1d4ed8;
+    background-color: #2563eb; /* Darker blue on hover */
+    border-color: #2563eb;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
 }
 
+.actionButton {
+    background-color: #ffffff;
+    color: #4b5563; /* Default text color */
+    border: 1px solid #d1d5db; /* Light gray border */
+    margin: 0 0.25rem;
+}
+
+.actionButton:hover {
+    background-color: #f9fafb; /* Very light gray background */
+    border-color: #9ca3af; /* Slightly darker border */
+    color: #1f2937;
+}
+
+/* Specific Action Buttons */
+.promoteButton { /* Example if needed */
+    color: #10b981;
+    border-color: #a7f3d0; /* Lighter green border */
+}
+.promoteButton:hover {
+    background-color: #f0fdf4; /* Very light green */
+    border-color: #34d399;
+    color: #047857;
+}
+
+.deleteButton {
+    color: #ef4444; /* Red */
+    border-color: #fecaca; /* Lighter red border */
+}
+.deleteButton:hover {
+    background-color: #fef2f2; /* Very light red */
+    border-color: #f87171;
+    color: #b91c1c;
+}
+
+/* Data Table */
 .dataTable {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 1rem;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
 }
 
 .dataTable th,
 .dataTable td {
-    padding: 0.75rem;
+    padding: 0.85rem 1rem; /* Increased padding */
     text-align: left;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb; /* Lighter separator */
+    vertical-align: middle; /* Align content vertically */
 }
 
 .dataTable th {
-    background-color: #f9fafb;
-    font-weight: 600;
+    background-color: #f9fafb; /* Very light gray header */
+    font-weight: 600; /* Bold headers */
+    color: #374151; /* Header text color */
+    font-size: 0.85rem; /* Slightly smaller header font */
+    text-transform: uppercase; /* Uppercase headers */
+    letter-spacing: 0.05em;
 }
 
-.actionButton {
-    padding: 0.5rem 1rem;
-    margin: 0 0.25rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 4px;
-    background-color: white;
-    cursor: pointer;
-    transition: background-color 0.2s;
+.dataTable tr:last-child td {
+    border-bottom: none; /* Remove border from last row */
 }
 
-.actionButton:hover {
-    background-color: #f9fafb;
+.dataTable tr:hover td {
+    background-color: #f3f4f6; /* Subtle hover effect */
 }
 
-.promoteButton {
-    border-color: #10b981;
-    color: #10b981;
+/* Status Badges */
+.statusBadge {
+    display: inline-block;
+    padding: 0.3rem 0.7rem;
+    border-radius: 16px; /* Pill shape */
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: capitalize;
 }
 
-.promoteButton:hover {
-    background-color: #e6f7f0;
+.statusBadge.available, .statusPending { /* Example */
+    background-color: #fef3c7; /* Light yellow */
+    color: #92400e; /* Dark yellow/brown */
+}
+.statusBadge.unavailable, .statusCancelled { /* Example */
+    background-color: #fee2e2; /* Light red */
+    color: #b91c1c; /* Dark red */
+}
+.statusBadge.confirmed { /* Example */
+    background-color: #d1fae5; /* Light green */
+    color: #065f46; /* Dark green */
+}
+.statusBadge.completed { /* Example */
+    background-color: #dbeafe; /* Light blue */
+    color: #1e40af; /* Dark blue */
 }
 
-.deleteButton {
-    border-color: #ef4444;
-    color: #ef4444;
+/* Role Badge (Example) */
+.roleBadge {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    background-color: #e0e7ff; /* Light indigo */
+    color: #3730a3; /* Indigo */
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
 }
 
-.deleteButton:hover {
-    background-color: #feeaec;
-}
-
+/* Loading / Error / Empty States */
 .error {
-    color: #dc2626;
-    padding: 1rem;
-    background-color: #fee2e2;
-    border-radius: 4px;
-    margin-bottom: 1rem;
+    color: #991b1b; /* Darker red */
+    padding: 1rem 1.25rem;
+    background-color: #fee2e2; /* Light red */
+    border: 1px solid #fecaca; /* Red border */
+    border-radius: 8px; /* Rounded corners */
+    margin-bottom: 1.5rem;
+    font-weight: 500;
 }
 
 .loadingIndicator {
-    padding: 1rem;
+    padding: 2rem;
     text-align: center;
-    color: #6b7280;
+    color: #6b7280; /* Gray text */
+    font-size: 1rem;
 }
 
 .emptyMessage {
-    padding: 1.5rem;
+    padding: 2rem;
     text-align: center;
     color: #6b7280;
     font-style: italic;
+    background-color: #f9fafb;
+    border-radius: 8px;
+    margin-top: 1.5rem;
 }
 
-.statusSelect {
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    border: 1px solid #e5e7eb;
-}
-
-.statusPending { color: #d97706; }
-.statusConfirmed { color: #059669; }
-.statusCompleted { color: #1d4ed8; }
-.statusCancelled { color: #dc2626; }
-
-.roleBadge {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
-    background-color: #e6f7ff;
-    color: #0369a1;
-    border-radius: 12px;
-    font-size: 0.875rem;
-}
-
+/* Modal Styling */
 .modalBackdrop {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(17, 24, 39, 0.6); /* Darker backdrop with opacity */
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 100;
+    z-index: 1000; /* Ensure it's on top */
+    padding: 1rem; /* Add padding for smaller screens */
 }
 
 .modal {
     background: white;
-    border-radius: 8px;
-    max-width: 500px;
-    width: 90%;
-    padding: 1.5rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 12px; /* More rounded */
+    max-width: 650px; /* Increased max-width */
+    width: 100%; /* Responsive width */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); /* Enhanced shadow */
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh; /* Limit height */
 }
 
 .modal h3 {
-    margin-bottom: 1.25rem;
-    color: #1f2937;
+    font-size: 1.3rem; /* Larger modal title */
+    font-weight: 600;
+    color: #111827;
+    padding: 1.5rem 2rem; /* Padding for title area */
+    border-bottom: 1px solid #e5e7eb; /* Separator */
+    margin: 0; /* Remove default margin */
+}
+
+/* Make the form scrollable */
+.modal form {
+    padding: 1.5rem 2rem; /* Padding for form content */
+    overflow-y: auto; /* Enable vertical scrolling for the form */
+    flex-grow: 1; /* Allow form to take available space */
 }
 
 .formGroup {
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem; /* Increased spacing */
+}
+
+.formGroup:last-child {
+    margin-bottom: 0;
 }
 
 .formGroup label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;
-    color: #374151;
+    color: #374151; /* Label color */
+    font-size: 0.9rem;
 }
 
 .formGroup input,
 .formGroup select,
 .formGroup textarea {
     width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 4px;
-    font-size: 1rem;
+    padding: 0.65rem 0.8rem; /* Adjusted padding */
+    border: 1px solid #d1d5db; /* Standard border */
+    border-radius: 6px;
+    font-size: 0.95rem;
+    color: #1f2937;
+    background-color: #ffffff;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.formGroup input:focus,
+.formGroup select:focus,
+.formGroup textarea:focus {
+    outline: none;
+    border-color: #3b82f6; /* Blue border on focus */
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); /* Focus ring */
 }
 
 .formGroup textarea {
-    min-height: 100px;
+    min-height: 80px; /* Slightly smaller default height */
     resize: vertical;
 }
 
-.modalActions {
-    margin-top: 1.5rem;
+/* Schedule Slot Input Group */
+.slotInputGroup {
     display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
+    align-items: center;
+    gap: 0.75rem; /* Space between inputs and button */
+    margin-bottom: 0.75rem; /* Space between slot groups */
 }
 
-.modalActions button {
-    padding: 0.5rem 1rem;
+.slotInputGroup input[type="datetime-local"] {
+    flex-grow: 1; /* Allow inputs to take available space */
+}
+
+.removeSlotButton,
+.addSlotButton {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
     border-radius: 4px;
-    font-weight: 500;
     cursor: pointer;
     transition: background-color 0.2s;
 }
 
-.modalActions button[type="button"] {
-    background-color: #f3f4f6;
-    border: 1px solid #e5e7eb;
+.removeSlotButton {
+    background-color: #fef2f2; /* Light red */
+    color: #b91c1c; /* Dark red */
+    border: 1px solid #fecaca;
+}
+.removeSlotButton:hover {
+    background-color: #fee2e2;
+    border-color: #fca5a5;
+}
+
+.addSlotButton {
+    background-color: #f0f9ff; /* Light blue */
+    color: #0284c7; /* Sky blue */
+    border: 1px solid #bae6fd;
+    margin-top: 0.5rem; /* Space above add button */
+    display: inline-block; /* Ensure it doesn't take full width */
+}
+.addSlotButton:hover {
+    background-color: #e0f2fe;
+    border-color: #7dd3fc;
+}
+
+
+/* Modal Actions */
+.modalActions {
+    padding: 1rem 2rem; /* Padding for actions area */
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    border-top: 1px solid #e5e7eb; /* Separator */
+    background-color: #f9fafb; /* Light background for footer */
+    border-bottom-left-radius: 12px; /* Match modal radius */
+    border-bottom-right-radius: 12px; /* Match modal radius */
+}
+
+.cancelButton { /* Specific styling for cancel */
+    background-color: #ffffff;
+    color: #4b5563;
+    border: 1px solid #d1d5db;
+}
+.cancelButton:hover {
+    background-color: #f9fafb;
+    border-color: #9ca3af;
     color: #1f2937;
 }
 
-.modalActions button[type="button"]:hover {
-    background-color: #e5e7eb;
-}
-
-.modalActions button[type="submit"] {
-    background-color: #2563eb;
-    border: none;
+.confirmButton { /* Specific styling for confirm/submit */
+    background-color: #3b82f6;
     color: white;
+    border-color: #3b82f6;
+}
+.confirmButton:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
 }
 
-.modalActions button[type="submit"]:hover {
-    background-color: #1d4ed8;
+/* Status Select (if used elsewhere) */
+.statusSelect {
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    font-size: 0.9rem;
+}
+
+.totalCustomers {
+    font-size: 1.1rem;
+    font-weight: bold; /* Bold */
+    color: #111827; /* Darker color */
+    margin-bottom: 1rem; /* Space below */
+}
+/* Detail Modal Styling */
+.detailView {
+    padding: 1.5rem 2rem;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.detailItem {
+    margin-bottom: 1.25rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.detailItem:last-child {
+    margin-bottom: 0;
+}
+
+.detailItem label {
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.detailItem p {
+    font-size: 0.95rem;
+    color: #1f2937;
+    margin: 0;
+    padding: 0.65rem 0.8rem;
+    background-color: #f9fafb;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    min-height: 2.25rem;
+    display: flex;
+    align-items: center;
+}
+
+.detailItem a {
+    color: #3b82f6;
+    text-decoration: none;
+}
+
+.detailItem a:hover {
+    text-decoration: underline;
 }

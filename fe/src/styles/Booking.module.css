@@ -280,6 +280,11 @@
     background-color: #4caf50;
     color: white;
   }
+
+  .premium.selected .selectButton {
+    background-color: #FFBF00;
+    color: white;
+  }
   
   .bookingAction {
     margin-top: 2rem;
@@ -1243,3 +1248,237 @@
 
 
 
+
+/* Styles for API messages in Total.tsx */
+.apiMessage {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.apiMessage.success {
+  background-color: #d4edda; /* Light green */
+  color: #155724; /* Dark green */
+  border: 1px solid #c3e6cb;
+}
+
+.apiMessage.error {
+  background-color: #f8d7da; /* Light red */
+  color: #721c24; /* Dark red */
+  border: 1px solid #f5c6cb;
+}
+
+/* Style for disabled reason text */
+.disabledReason {
+    font-size: 0.85rem;
+    color: #dc3545; /* Bootstrap danger color for emphasis */
+    text-align: center;
+    margin-top: 0.5rem;
+}
+
+/* Adjust payment button style if needed */
+.paymentButton {
+    display: block;
+    width: 100%;
+    padding: 0.8rem 1.5rem;
+    background-color: #12B886; /* Your theme color */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    margin-top: 1rem; /* Add some space above */
+}
+
+.paymentButton:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.paymentButton:not(:disabled):hover {
+    background-color: #0e9a6e; /* Darker shade on hover */
+}
+
+/* Ensure payment form container allows messages */
+.paymentFormContainer {
+    margin-top: 1rem; /* Add space if needed */
+}
+
+/* Optional: Adjust bank transfer info styling */
+.bankTransferInfo {
+    background-color: #f0f0f0;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: #555;
+}
+.bankTransferInfo h4 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+.bankTransferInfo p {
+    margin-bottom: 0.3rem;
+}
+
+/* QR Code Modal Styles */
+.qrCodeModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.qrCodeContent {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.qrCodeImage {
+  display: block;
+  margin: 1rem auto;
+  max-width: 200px;
+  max-height: 200px;
+  }
+
+.closeButton {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 0.5rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 1rem;
+}
+
+.closeButton:hover {
+  background-color: #388e3c;
+}
+
+/* Payment Section Styles */
+.paymentSection {
+  background-color: white;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.paymentMethodSelector {
+  margin-bottom: 1.5rem;
+}
+
+.paymentMethodTitle {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.paymentOptionsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.paymentMethodOption {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+  min-width: 120px;
+}
+
+.paymentMethodOption:hover {
+  border-color: #4caf50;
+}
+
+.paymentMethodOption.selected {
+  border-color: #4caf50;
+  background-color: #e8f5e9;
+}
+
+.paymentLogo {
+  width: 24px;
+  height: 24px;
+}
+
+.paymentFormContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.digitalWalletInfo {
+  padding: 0.75rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.digitalWalletInfo p {
+  margin: 0;
+  color: #555;
+}
+
+.apiMessage {
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin: 0;
+}
+
+.apiMessage.error {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.apiMessage.success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.paymentButton {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1.1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-weight: 500;
+}
+
+.paymentButton:hover:not(:disabled) {
+  background-color: #388e3c;
+}
+
+.paymentButton:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.disabledReason {
+  color: #c62828;
+  font-size: 0.9rem;
+  text-align: center;
+}

@@ -103,6 +103,13 @@ class FoodItemDetail(BaseModel):
     class Config:
         populate_by_name = True
 
+class SessionDetail(BaseModel):
+    SessionID: int
+    Type: str
+    StartDate: datetime
+    EndDate: Optional[datetime] = None # Make optional if not always present
+    Price: Optional[float] = None    # Make optional if not always present
+
 class UserOrderDetail(BaseModel):
     order_id: int
     order_date: datetime
@@ -110,6 +117,7 @@ class UserOrderDetail(BaseModel):
     bookings: List[BookingDetail]
     equipment_rentals: List[EquipmentRentalDetail]
     food_items: List[FoodItemDetail]
+    session: Optional[SessionDetail] = None 
 
 class UserOrderListResponse(BaseModel):
     orders: List[UserOrderDetail]

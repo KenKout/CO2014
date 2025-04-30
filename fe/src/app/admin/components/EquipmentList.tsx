@@ -49,6 +49,8 @@ const EquipmentList: React.FC = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
 
     // 2. CHANGE: Update newEquipment state to match backend create request
     const [newEquipmentData, setNewEquipmentData] = useState<NewEquipmentData>({
@@ -144,24 +146,40 @@ const EquipmentList: React.FC = () => {
     };
 
      // 4. ADD: Function to open Edit Modal and fetch current data (using currently unused GET /id)
-    const handleEditClick = async (item: Equipment) => {
-        setLoading(true); // Show loading indicator while fetching details
-        setError(null);
-        try {
-             // GET /admin/equipment/{id} - Using the endpoint not previously used by FE
-            const response = await api.get(`/admin/equipment/${item.EquipmentID}`);
-             // Assuming response.data is the Equipment object
+     const handleEditClick = async (item: Equipment) => {
+         setLoading(true); // Show loading indicator while fetching details
+         setError(null);
+         try {
+              // GET /admin/equipment/{id} - Using the endpoint not previously used by FE
+             const response = await api.get(`/admin/equipment/${item.EquipmentID}`);
+              // Assuming response.data is the Equipment object
              setEditingEquipment(response.data);
-             setShowEditModal(true);
-        } catch (err: any) {
-             console.error("Error fetching equipment details for edit:", err);
-            setError(`Failed to load equipment details: ${err?.response?.data?.detail || err.message || 'Please try again.'}`);
-            setEditingEquipment(null); // Clear editing state on error
-        } finally {
-            setLoading(false);
-        }
-
-    };
+              setShowEditModal(true);
+         } catch (err: any) {
+              console.error("Error fetching equipment details for edit:", err);
+             setError(`Failed to load equipment details: ${err?.response?.data?.detail || err.message || 'Please try again.'}`);
+             setEditingEquipment(null); // Clear editing state on error
+         } finally {
+             setLoading(false);
+         }
+     };
+ 
+     // 5. ADD: Function to fetch and display equipment details
+     const handleDetailClick = async (item: Equipment) => {
+         setLoading(true);
+         setError(null);
+         try {
+             const response = await api.get(`/admin/equipment/${item.EquipmentID}`);
+             setSelectedEquipment(response.data);
+             setShowDetailModal(true);
+         } catch (err: any) {
+             console.error("Error fetching equipment details:", err);
+             setError(`Failed to load equipment details: ${err?.response?.data?.detail || err.message || 'Please try again.'}`);
+             alert("Failed to get equipment details. Please try again.");
+         } finally {
+             setLoading(false);
+         }
+     };
 
     // 5. CHANGE/ADD: Update handler for submitting edits
     const handleUpdateEquipment = async (e: React.FormEvent) => {
@@ -258,10 +276,10 @@ const EquipmentList: React.FC = () => {
                         <th>ID</th>
                         <th>Name</th>
                         <th>Type</th>
-                        <th>Brand</th>
+                        {/* <th>Brand</th>
                         <th>Price (VND)</th>
                         <th>Stock</th>
-                        <th>Image URL</th>
+                        <th>Image URL</th> */}
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -271,10 +289,10 @@ const EquipmentList: React.FC = () => {
                             <td>{item.EquipmentID}</td>
                             <td>{item.Name}</td>
                             <td>{item.Type}</td>
-                            <td>{item.Brand || 'N/A'}</td>
-                            <td>{item.Price}</td>
-                            <td>{item.Stock}</td>
-                            <td>{item.url ? <a href={String(item.url)} target="_blank" rel="noopener noreferrer">Link</a> : 'No URL'}</td>
+                            <td style={{ display: 'none' }}>{item.Brand || 'N/A'}</td>
+                            <td style={{ display: 'none' }}>{item.Price}</td>
+                            <td style={{ display: 'none' }}>{item.Stock}</td>
+                            <td style={{ display: 'none' }}>{item.url ? <a href={String(item.url)} target="_blank" rel="noopener noreferrer">Link</a> : 'No URL'}</td>
                             <td>
                                 {/* Add Edit Button */}
                                 <button
@@ -282,6 +300,12 @@ const EquipmentList: React.FC = () => {
                                     onClick={() => handleEditClick(item)}
                                 >
                                     Edit
+                                </button>
+                                <button
+                                    className={styles.actionButton}
+                                    onClick={() => handleDetailClick(item)}
+                                >
+                                    Detail
                                 </button>
                                 <button
                                     className={`${styles.actionButton} ${styles.deleteButton}`}
@@ -485,6 +509,43 @@ const EquipmentList: React.FC = () => {
                                 </div>
                             </form>
                          )}
+                    </div>
+                </div>
+            )}
+
+            {showDetailModal && selectedEquipment && (
+                <div className={styles.modalBackdrop}>
+                    <div className={styles.modal}>
+                        <h3>Equipment Details (ID: {selectedEquipment.EquipmentID})</h3>
+                        <div className={styles.detailView}>
+                            <div className={styles.detailItem}>
+                                <label><strong>Name:</strong></label>
+                                <p>{selectedEquipment.Name}</p>
+                            </div>
+                            <div className={styles.detailItem}>
+                                <label><strong>Type:</strong></label>
+                                <p>{selectedEquipment.Type}</p>
+                            </div>
+                            <div className={styles.detailItem}>
+                                <label><strong>Brand:</strong></label>
+                                <p>{selectedEquipment.Brand || 'N/A'}</p>
+                            </div>
+                            <div className={styles.detailItem}>
+                                <label><strong>Price (VND):</strong></label>
+                                <p>{selectedEquipment.Price}</p>
+                            </div>
+                            <div className={styles.detailItem}>
+                                <label><strong>Stock:</strong></label>
+                                <p>{selectedEquipment.Stock}</p>
+                            </div>
+                            <div className={styles.detailItem}>
+                                <label><strong>Image URL:</strong></label>
+                                <p>{selectedEquipment.url ? <a href={String(selectedEquipment.url)} target="_blank" rel="noopener noreferrer">Link</a> : 'No URL'}</p>
+                            </div>
+                        </div>
+                        <div className={styles.modalActions}>
+                            <button type="button" onClick={() => { setShowDetailModal(false); setSelectedEquipment(null); }}>Close</button>
+                        </div>
                     </div>
                 </div>
             )}

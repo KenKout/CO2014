@@ -14,15 +14,20 @@ interface BookingData {
     // courtId?: number | null; 
 }
 
-// Define props interface - ADD selectedCourt
+// Define props interface - UPDATED for selected court data
+export interface CourtData { // <-- EXPORTED: Define a type for the court data we need
+    id: number;
+    hourRate: number;
+    isPremium: boolean;
+}
 interface BookingFormProps {
     bookingData?: BookingData;
     onBookingChange: (data: BookingData) => void;
-    selectedCourt: number | null; // <-- ADDED: To know which court is selected for pricing
+    selectedCourtData: CourtData | null; // <-- UPDATED: Pass court data object
 }
 
 // UPDATE props destructuring
-const BookingForm = ({ bookingData, onBookingChange, selectedCourt }: BookingFormProps) => { 
+const BookingForm = ({ bookingData, onBookingChange, selectedCourtData }: BookingFormProps) => {
     const [date, setDate] = useState(bookingData?.date || "");
     const [startTime, setStartTime] = useState(bookingData?.startTime || "");
     const [endTime, setEndTime] = useState(bookingData?.endTime || "");
@@ -77,15 +82,17 @@ const BookingForm = ({ bookingData, onBookingChange, selectedCourt }: BookingFor
         }
     }, [date, startTime, endTime, onBookingChange]);
 
-    // Effect to calculate price when duration, date, time, or court changes
+    // Effect to calculate price when duration, date, time, or court data changes
     useEffect(() => {
-        if (duration > 0 && date && startTime && selectedCourt !== null) {
-            const price = calculatePrice(duration, date, startTime, selectedCourt);
+        // Use selectedCourtData instead of selectedCourt ID
+        if (duration > 0 && date && startTime && selectedCourtData) {
+            // Pass the necessary court data to calculatePrice
+            const price = calculatePrice(duration, date, startTime, selectedCourtData);
             setEstimatedPrice(price);
         } else {
             setEstimatedPrice("0"); // Reset price if conditions aren't met
         }
-    }, [duration, date, startTime, selectedCourt]);
+    }, [duration, date, startTime, selectedCourtData]); // Depend on selectedCourtData
 
 
     return (
@@ -173,21 +180,18 @@ const BookingForm = ({ bookingData, onBookingChange, selectedCourt }: BookingFor
 };
 
 // --- MODIFICATION START ---
-// Helper function to calculate price - updated for VND and premium courts AND SURCHARGES
+// Helper function to calculate price - Refactored to use fetched court data
 const calculatePrice = (
     duration: number,
     date: string,
     startTime: string,
-    courtId: number | null // Keep courtId if needed for other logic like premium surcharge
+    courtData: CourtData | null // Use the selected court data object
 ): string => {
-    if (!date || !startTime || duration <= 0) return "0";
+    // Ensure we have valid duration and court data
+    if (!date || !startTime || duration <= 0 || !courtData) return "0";
 
-    // --- BASE RATE LOGIC (Keep existing or replace with fetched rate later) ---
-    // Define base rates in VND (These might represent the 'fetched' price for now)
-    const offPeakRate = 90000;
-    const peakRate = 120000; // Base rate during 5pm-9pm weekdays before surcharge
-    const weekendBaseRate = 140000; // Base rate on weekends before surcharge
-    const premiumSurcharge = 50000; // Keep premium surcharge if needed
+    // --- Use fetched HourRate as the base rate ---
+    const baseHourlyRate = courtData.hourRate; // Use the rate from the selected court
 
     const bookingDate = new Date(date);
     // Adjust getDay for timezone if necessary, might be safer to parse date as UTC
@@ -208,27 +212,12 @@ const calculatePrice = (
         timeSurcharge = 50000;
     }
 
-    // --- DETERMINE BASE HOURLY RATE (Using existing logic for now) ---
-    // This part needs review depending on whether we fetch the base rate or use these definitions
-    let baseHourlyRate;
-    if (isWeekend) {
-        baseHourlyRate = weekendBaseRate;
-    } else if (isWeekdayPeakSurchargeHour) { // Use the same peak hour definition for consistency if using these rates
-        baseHourlyRate = peakRate;
-    } else {
-        baseHourlyRate = offPeakRate;
-    }
-    // --- END BASE RATE LOGIC ---
-
-
-    // Add premium surcharge if applicable (Keep this if needed)
-    const isPremiumCourt = courtId === 1 || courtId === 4; // Example premium courts
-    if (isPremiumCourt) {
-        baseHourlyRate += premiumSurcharge; // Add premium surcharge to the base rate
-    }
+    // --- REMOVED HARDCODED BASE RATE LOGIC ---
+    // --- REMOVED HARDCODED PREMIUM CHECK AND SURCHARGE ---
+    // The baseHourlyRate is now directly from courtData.hourRate
 
     // Calculate final hourly rate including time surcharge
-    const finalHourlyRate = baseHourlyRate + timeSurcharge;
+    const finalHourlyRate = baseHourlyRate + timeSurcharge; // Apply time surcharge on top of fetched rate
 
     // Calculate total price
     const totalPrice = finalHourlyRate * duration;

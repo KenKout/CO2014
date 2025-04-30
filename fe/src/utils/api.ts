@@ -24,9 +24,10 @@
     );
 
     return {
-      get: (endpoint: string, options: any = {}) => apiClient.get(endpoint, options),
-      post: (endpoint: string, body: any, options: any = {}) => apiClient.post(endpoint, body, options),
-      put: (endpoint: string, body: any, options: any = {}) => apiClient.put(endpoint, body, options),
-      delete: (endpoint: string, options: any = {}) => apiClient.delete(endpoint, options),
+      // Add generic type T for response data
+      get: <T = any>(endpoint: string, options: any = {}) => apiClient.get<T>(endpoint, options),
+      post: <T = any>(endpoint: string, body: any, options: any = {}) => apiClient.post<T>(endpoint, body, options),
+      put: <T = any>(endpoint: string, body: any, options: any = {}) => apiClient.put<T>(endpoint, body, options),
+      delete: <T = any>(endpoint: string, options: any = {}) => apiClient.delete<T>(endpoint, options),
     };
   };

@@ -367,24 +367,23 @@ def get_training_session_by_id_admin(session_id: int, db: pymysql.connections.Co
     return session
 
 
-def update_training_session_admin(session_id: int, update_data, db: pymysql.connections.Connection) -> Dict[str, Any]:
+def update_training_session_admin(session_id: int, update_data, db: pymysql.connections.Connection) -> Dict[str, Any]: # Add type hint for update_data
     """
     Admin: Update details for a specific training session.
-        update_data is an instance of AdminTrainingSessionUpdateRequest.
-        Raises 404 if session not found.
-        """
-    # Check if session exists first
+    update_data is an instance of AdminTrainingSessionUpdateRequest.
+    Raises 404 if session not found.
+    """
     try:
-        # Fetch current data to validate against and potentially check FKs later
         current_session = get_training_session_by_id_admin(session_id, db)
     except HTTPException as e:
         raise e # Re-raise 404 or other errors
 
+    # --- Prepare update for main Training_Session table ---
     updates = []
     params = []
-    update_dict = update_data.model_dump(exclude_unset=True)
+    # Create the dict *excluding* schedule_slots initially
+    update_dict_main = update_data.model_dump(exclude={'schedule_slots'}, exclude_unset=True)
 
-    # Map Pydantic fields to DB columns and build query
     field_map = {
         "StartDate": "StartDate", "EndDate": "EndDate", "CoachID": "CoachID",
         "CourtID": "CourtID", "Schedule": "Schedule", "Type": "Type",
@@ -392,99 +391,108 @@ def update_training_session_admin(session_id: int, update_data, db: pymysql.conn
         "Max_Students": "Max_Students"
     }
 
-    for field, value in update_dict.items():
+    for field, value in update_dict_main.items():
         db_column = field_map.get(field)
         if db_column:
             # Handle Enum values
             if field in ["Type", "Status"] and value is not None:
+                 # Assuming value is already the correct enum member from Pydantic validation
                  updates.append(f"{db_column} = %s")
-                 params.append(value.value) # Use enum value
+                 params.append(value.value) # Use enum value directly
             elif value is not None:
                  updates.append(f"{db_column} = %s")
                  params.append(value)
 
-    if not updates:
+    if not updates and update_data.schedule_slots is None: # Check if NO fields AND NO slots were provided
         logger.info(f"Admin: No update data provided for session ID {session_id}.")
-        return current_session # Return current data if nothing to update
+        # Note: If only schedule_slots are updated, 'updates' will be empty, which is fine.
+        # Only return early if *nothing* was sent to update.
+        # Check if schedule_slots was explicitly provided (even if empty list)
+        if 'schedule_slots' not in update_data.model_dump(exclude_unset=False): # Check if key exists at all
+             return current_session
 
-    # Add session_id to params for WHERE clause
-    params.append(session_id)
+    # Add session_id to params for WHERE clause IF updating the main table
+    if updates:
+        params.append(session_id)
 
     try:
-        # --- Start Transaction ---
         db.begin()
         with db.cursor() as cursor:
-            # 1. Handle Schedule Slot Replacement (if provided)
-            if 'schedule_slots' in update_dict:
-                new_slots = update_dict.pop('schedule_slots') # Remove from dict to avoid processing in main update loop
-                
-                # Delete existing slots for this session
+            # 1. Handle Schedule Slot Replacement (if provided in the original request)
+            # Check the Pydantic model directly, not the dict
+            if update_data.schedule_slots is not None:
+                new_slots_objects = update_data.schedule_slots # These are ScheduleSlot OBJECTS
+
+                # Delete existing slots
                 delete_schedule_sql = "DELETE FROM TrainingSchedule WHERE SessionID = %s"
                 cursor.execute(delete_schedule_sql, (session_id,))
                 logger.info(f"Deleted existing schedule slots for SessionID {session_id} before update.")
 
                 # Insert new slots if the list is not empty
-                if new_slots: # new_slots could be None or an empty list
+                if new_slots_objects: # Check if the list has items
                     schedule_sql = """
                     INSERT INTO TrainingSchedule (SessionID, CourtID, StartTime, EndTime)
                     VALUES (%s, %s, %s, %s)
                     """
                     schedule_params = []
-                    # Determine the effective StartDate, EndDate, CourtID for validation
+                    # Determine effective StartDate, EndDate, CourtID
                     # Use updated values if provided, otherwise use current values
-                    effective_start_date = update_dict.get('StartDate', current_session['StartDate'])
-                    effective_end_date = update_dict.get('EndDate', current_session['EndDate'])
-                    effective_court_id = update_dict.get('CourtID', current_session['CourtID'])
+                    # Access the potentially updated values from the Pydantic model or fall back
+                    effective_start_date = update_data.StartDate or current_session['StartDate']
+                    effective_end_date = update_data.EndDate or current_session['EndDate']
+                    effective_court_id = update_data.CourtID or current_session['CourtID']
 
-                    for slot_data in new_slots:
-                         # Pydantic should have validated StartTime/EndTime format and order within slot
-                         # Validate slot times against session StartDate/EndDate
-                         if not (effective_start_date <= slot_data.StartTime < slot_data.EndTime <= effective_end_date):
+                    # Iterate over the list of ScheduleSlot OBJECTS
+                    for slot_obj in new_slots_objects:
+                         # Now access attributes using dot notation - THIS IS THE FIX
+                         if not (effective_start_date <= slot_obj.StartTime < slot_obj.EndTime <= effective_end_date):
+                             db.rollback() # Rollback before raising
                              raise HTTPException(
                                  status_code=400,
-                                 detail=f"New schedule slot {slot_data.StartTime}-{slot_data.EndTime} is outside the effective session bounds {effective_start_date}-{effective_end_date}."
+                                 detail=f"New schedule slot {slot_obj.StartTime}-{slot_obj.EndTime} is outside the effective session bounds {effective_start_date}-{effective_end_date}."
                              )
                          schedule_params.append((
                             session_id,
-                            effective_court_id, # Use the effective CourtID
-                            slot_data.StartTime,
-                            slot_data.EndTime
+                            effective_court_id,
+                            slot_obj.StartTime, # Use attribute access
+                            slot_obj.EndTime   # Use attribute access
                          ))
-                    
+
                     if schedule_params:
                         cursor.executemany(schedule_sql, schedule_params)
                         logger.info(f"Inserted {len(schedule_params)} new schedule slots for SessionID {session_id}")
 
             # 2. Update Training_Session table (if other fields were provided)
-            if updates: # Check if there are updates for the main table
-                 # Optional: Add checks for new CoachID/CourtID existence if they are being updated
-                 if 'CoachID' in update_dict and update_dict['CoachID'] is not None:
-                    cursor.execute("SELECT StaffID FROM Coach WHERE StaffID = %s", (update_dict['CoachID'],))
+            if updates: # Only run update if there are fields for the main table
+                 # Optional: Add checks for new CoachID/CourtID existence
+                 if 'CoachID' in update_dict_main and update_dict_main['CoachID'] is not None:
+                    cursor.execute("SELECT StaffID FROM Coach WHERE StaffID = %s", (update_dict_main['CoachID'],))
                     if not cursor.fetchone():
-                        raise HTTPException(status_code=404, detail=f"New Coach with StaffID {update_dict['CoachID']} not found.")
-                 if 'CourtID' in update_dict and update_dict['CourtID'] is not None:
-                    cursor.execute("SELECT Court_ID FROM Court WHERE Court_ID = %s", (update_dict['CourtID'],))
+                        db.rollback()
+                        raise HTTPException(status_code=404, detail=f"New Coach with StaffID {update_dict_main['CoachID']} not found.")
+                 if 'CourtID' in update_dict_main and update_dict_main['CourtID'] is not None:
+                    cursor.execute("SELECT Court_ID FROM Court WHERE Court_ID = %s", (update_dict_main['CourtID'],))
                     if not cursor.fetchone():
-                        raise HTTPException(status_code=404, detail=f"New Court with Court_ID {update_dict['CourtID']} not found.")
+                        db.rollback()
+                        raise HTTPException(status_code=404, detail=f"New Court with Court_ID {update_dict_main['CourtID']} not found.")
 
                  # Execute update for Training_Session
                  sql = f"UPDATE Training_Session SET {', '.join(updates)} WHERE SessionID = %s"
-                 logger.debug(f"Admin: Executing Session update for ID {session_id}: {sql}")
-                 cursor.execute(sql, tuple(params)) # params already includes session_id
+                 logger.debug(f"Admin: Executing Session update for ID {session_id}: {sql} with params {params}")
+                 cursor.execute(sql, tuple(params)) # params already includes session_id if updates exist
 
-                 if cursor.rowcount == 0 and 'schedule_slots' not in update_data.model_dump(): # Only warn if no other changes were made
-                      # If only schedule_slots were updated, rowcount for main table will be 0, which is okay.
-                      # If other fields were updated but rowcount is 0, it's unexpected.
+                 # Don't warn about rowcount 0 if only schedule slots were potentially updated
+                 # Check rowcount only if 'updates' list was non-empty
+                 if cursor.rowcount == 0:
                       logger.warning(f"Admin: Update for session ID {session_id} (main table) affected 0 rows unexpectedly.")
-                      # Don't rollback here if schedule slots were potentially modified successfully.
+                      # Consider if this should be an error or just a warning
 
                  logger.info(f"Admin: Successfully updated main details for session ID {session_id}.")
-            
+
             # --- Commit Transaction ---
             db.commit()
             logger.info(f"Admin: Update transaction committed for session ID {session_id}.")
 
-            # Fetch and return updated details (including potentially new slots)
             return get_training_session_by_id_admin(session_id, db)
 
     except pymysql.Error as db_err:
@@ -493,7 +501,7 @@ def update_training_session_admin(session_id: int, update_data, db: pymysql.conn
         raise HTTPException(status_code=500, detail="Database error during session update")
     except Exception as e:
         db.rollback()
-        if isinstance(e, HTTPException): # Re-raise 404
+        if isinstance(e, HTTPException): # Re-raise validation errors
             raise e
         logger.exception(f"Admin: Unexpected error updating session ID {session_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error during session update")

@@ -167,10 +167,11 @@ CREATE TABLE `FeedBack` (
     `Rate` INT,
     `CourtID` INT,
     `SessionID` INT,
+    `OrderID` INT,
     FOREIGN KEY (`CustomerID`) REFERENCES `Customer`(`CustomerID`),
     FOREIGN KEY (`CourtID`) REFERENCES `Court`(`Court_ID`),
-    FOREIGN KEY (`SessionID`) REFERENCES `Training_Session`(`SessionID`)
-    FOREIGN KEY (`OrderID`) REFERENCES `OrderTable`(`OrderID`),
+    FOREIGN KEY (`SessionID`) REFERENCES `Training_Session`(`SessionID`),
+    FOREIGN KEY (`OrderID`) REFERENCES `OrderTable`(`OrderID`)
 );
 
 
@@ -292,6 +293,24 @@ BEGIN
     LEFT JOIN Court ct ON fb.CourtID = ct.Court_ID AND fb.ON = 'Court'
     LEFT JOIN Training_Session ts ON fb.SessionID = ts.SessionID AND fb.ON = 'Session'
     WHERE fb.FeedbackID = p_feedback_id;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE FUNCTION GetCustomerCount()
+RETURNS INT
+DETERMINISTIC
+BEGIN
+    DECLARE customerCount INT;
+    
+    SELECT COUNT(*) INTO customerCount
+    FROM Customer c
+    JOIN User u ON c.Username = u.Username
+    WHERE u.UserType = 'Customer';
+    
+    RETURN customerCount;
 END //
 
 DELIMITER ;

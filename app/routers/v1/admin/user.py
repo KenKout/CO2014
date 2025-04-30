@@ -16,6 +16,7 @@ from app.models.user import (
     update_user_admin,
     delete_user_admin,
     promote_customer_to_staff_admin,
+    get_customer_count_admin,
     promote_staff_to_coach_admin # Added import
 )
 
@@ -65,6 +66,8 @@ class CustomerDetail(BaseModel):
     CustomerID: int
     Name: str
     Date_of_Birth: Optional[str] = None # Make optional as it might not always be set? Or ensure it is.
+class CustomerCountResponse(BaseModel):
+    count: int
 
 class StaffDetail(BaseModel):
     StaffID: int
@@ -319,4 +322,24 @@ async def promote_user_to_coach(
         logger.exception(f"Unexpected error promoting user {username} to coach: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
 
+
+@admin_user_router.get("/stats/customer-count", response_model=CustomerCountResponse)
+async def get_customer_count(
+    db: pymysql.connections.Connection = Depends(get_db)
+):
+    """
+    Admin route to get the total count of customers in the system.
+    Uses the GetCustomerCount() SQL function.
+    Requires admin privileges.
+    """
+    logger.info("Admin request to fetch total customer count.")
+    try:
+        result = get_customer_count_admin(db=db)
+        return result
+    except HTTPException as e:
+        # Re-raise HTTPExceptions from the model layer
+        raise e
+    except Exception as e:
+        logger.exception(f"Unexpected error fetching customer count: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
 # End of User Management Routes
