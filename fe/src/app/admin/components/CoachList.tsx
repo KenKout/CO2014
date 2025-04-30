@@ -23,7 +23,6 @@ const CoachList: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [selectedCoach, setSelectedCoach] = useState<Coach | null>(null);
     const [showEditModal, setShowEditModal] = useState(false);
-    const [debugInfo, setDebugInfo] = useState<string>("");
 
     // Get token from your auth context or localStorage
     const { token } = useAuth();
@@ -40,7 +39,6 @@ const CoachList: React.FC = () => {
             // Check if the API endpoint matches the backend route
             const response = await api.get("/admin/coaches");
             console.log("Coach data response:", response.data);
-            setDebugInfo(JSON.stringify(response.data, null, 2).substring(0, 200) + "...");
             
             if (Array.isArray(response.data)) {
                 setCoaches(response.data);
@@ -95,16 +93,9 @@ const CoachList: React.FC = () => {
 
     return (
         <div className={styles.listContainer}>
-            <h2>Coaches</h2>
-            
-            {/* Debug information - remove in production */}
-            {debugInfo && (
-                <div style={{ marginBottom: '20px', padding: '10px', background: '#f5f5f5', fontSize: '12px' }}>
-                    <strong>Debug Info:</strong>
-                    <pre>{debugInfo}</pre>
-                    <button onClick={fetchCoaches}>Retry Loading</button>
-                </div>
-            )}
+            <div className={styles.listHeader}>
+                <h2>Coaches</h2>
+            </div>
             
             {loading && (
                 <div className={styles.loadingIndicator}>Loading coach data...</div>

@@ -52,6 +52,19 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 		});
 	};
 
+	const formatLocalDateTime = (utcDateTimeString: string): string => {
+		if (!utcDateTimeString) return "N/A";
+		const date = new Date(utcDateTimeString); // Parses the UTC string
+		// Use options for desired format, e.g., show time with hours and minutes
+		// Adjust 'en-GB' or locale options as needed
+		return date.toLocaleString("en-GB", {
+			// dateStyle: 'short', // e.g., 28/07/2024
+			hour: '2-digit',
+			minute: '2-digit',
+			hour12: false // Use true for AM/PM if preferred
+		});
+	};
+
 	// Determine the primary booking item cost
 	const bookingItemPrice =
 		details.mode === "court" ? details.courtPrice : details.sessionPrice;
@@ -67,33 +80,35 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 						Booking Details
 					</h4>
 					{details.mode === "court" &&
-						details.date &&
-						details.startTime &&
-						details.endTime &&
-						details.duration &&
-						details.courtNumber &&
-						details.courtType && (
-							<>
-								<p>
-									<strong>Type:</strong> Court Booking
-								</p>
-								<p>
-									<strong>Date:</strong>{" "}
-									{new Date(details.date).toLocaleDateString(
-										"en-GB"
-									)}
-								</p>
-								<p>
-									<strong>Time:</strong> {details.startTime} -{" "}
-									{details.endTime} ({details.duration} hour
-									{details.duration > 1 ? "s" : ""})
-								</p>
-								<p>
-									<strong>Court:</strong>{" "}
-									{details.courtNumber} ({details.courtType})
-								</p>
-							</>
-						)}
+    details.date && // Keep original date for display if needed separately
+    details.startTime && // startTime is likely UTC string from backend
+    details.endTime &&   // endTime is likely UTC string from backend
+    details.duration &&
+    details.courtNumber &&
+    details.courtType && (
+        <>
+            <p>
+                <strong>Type:</strong> Court Booking
+            </p>
+            <p>
+                <strong>Date:</strong>{" "}
+                {/* Display original date if it's just the date part */}
+                {new Date(details.date).toLocaleDateString(
+                    "en-GB"
+                )}
+            </p>
+            <p>
+                <strong>Time:</strong> {formatLocalDateTime(details.startTime)} -{" "}
+                                    {formatLocalDateTime(details.endTime)} {/* <-- USE FORMATTER */}
+                                    ({details.duration} hour
+                {details.duration > 1 ? "s" : ""})
+            </p>
+            <p>
+                <strong>Court:</strong>{" "}
+                {details.courtNumber} ({details.courtType})
+            </p>
+        </>
+    )}
 					{details.mode === "training" &&
 						details.sessionName &&
 						details.sessionCoach &&

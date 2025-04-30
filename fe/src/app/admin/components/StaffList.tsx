@@ -298,7 +298,9 @@ const StaffList: React.FC = () => {
 
     return (
         <div className={styles.listContainer}>
-            <h2>Staff Management</h2>
+            <div className={styles.listHeader}>
+                <h2>Staff Management</h2>
+            </div>
             {/* Persistent error display at the top */}
             {error && !showEditModal && !showDeleteConfirmModal && !showPromoteCoachModal && (
                  <div className={`${styles.error} ${styles.persistentError}`}>

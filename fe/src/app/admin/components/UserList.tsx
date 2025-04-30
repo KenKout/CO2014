@@ -21,6 +21,7 @@ interface User {
 
 const UserList: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
+    const [customerCount, setCustomerCount] = useState<number>(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showAddModal, setShowAddModal] = useState(false);
@@ -61,13 +62,18 @@ const UserList: React.FC = () => {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const response = await api.get('/admin/users/');
-            console.log('API Response:', response.data); // Log the response for debugging
-            setUsers(response.data);
+            const usersResponse = await api.get('/admin/users/');
+            console.log('Users API Response:', usersResponse.data); // Log the response for debugging
+            setUsers(usersResponse.data);
+            
+            const countResponse = await api.get('/admin/users/stats/customer-count');
+            console.log('Customer Count API Response:', countResponse.data); // Log the response for debugging
+            setCustomerCount(countResponse.data.count);
+            
             setError(null);
         } catch (err: any) {
-            console.error('Error fetching users:', err);
-            let errorMessage = 'Failed to load users. Please try again.';
+            console.error('Error fetching users or customer count:', err);
+            let errorMessage = 'Failed to load users or customer count. Please try again.';
             if (err.response) {
                 errorMessage += ` Status: ${err.response.status}.`;
                 if (err.response.data && err.response.data.detail) {
@@ -251,7 +257,10 @@ const UserList: React.FC = () => {
         <div className={styles.listContainer}>
             <div className={styles.listHeader}>
                 <h2>User Management</h2>
-                <button 
+                <div className={styles.stats}>
+                    <span className={styles.totalCustomers}>Total Customers: {customerCount}</span>
+                </div>
+                <button
                     className={styles.addButton}
                     onClick={() => setShowAddModal(true)}
                 >

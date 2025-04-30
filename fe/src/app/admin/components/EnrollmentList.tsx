@@ -99,6 +99,23 @@ const EnrollmentList: React.FC = () => {
         }
     };
 
+    // Function to fetch and display enrollment details
+    const handleDetailClick = async (enrollment: Enrollment) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await api.get(`/admin/enrollments/${enrollment.CustomerID}/${enrollment.SessionID}`);
+            alert(`Enrollment details for Customer ID ${enrollment.CustomerID} and Session ID ${enrollment.SessionID} retrieved successfully. Check console.`);
+            console.log("Enrollment Details:", response.data);
+        } catch (err: any) {
+            console.error("Error fetching enrollment details:", err);
+            setError(`Failed to load enrollment details: ${err?.response?.data?.detail || err.message || 'Please try again.'}`);
+            alert("Failed to get enrollment details. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (loading)
         return (
             <div className={styles.loadingIndicator}>
@@ -141,6 +158,12 @@ const EnrollmentList: React.FC = () => {
                             <td>{enrollment.SessionDetails ?? 'N/A'}</td> {/* Handle optional field */}
                             {/* Removed date and status cells */}
                             <td>
+                                <button
+                                    className={styles.actionButton}
+                                    onClick={() => handleDetailClick(enrollment)}
+                                >
+                                    Detail
+                                </button>
                                 <button
                                     className={`${styles.actionButton} ${styles.deleteButton}`}
                                     // Pass CustomerID and SessionID to delete handler

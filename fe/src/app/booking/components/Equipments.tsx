@@ -93,55 +93,71 @@ const Equipments = ({ onEquipmentChange }: EquipmentsProps) => {
 	       return <section className={styles.equipmentSection}><h2 className={styles.sectionTitle}>Equipment Rental</h2><p>No equipment available.</p></section>;
 	   }
 
+	   // Group equipment by type for categorization
+	   const groupedEquipment = equipmentItems.reduce((acc, item) => {
+	       const type = item.type || "Other";
+	       if (!acc[type]) {
+	           acc[type] = [];
+	       }
+	       acc[type].push(item);
+	       return acc;
+	   }, {} as Record<string, EquipmentItem[]>);
+
 	   return (
 	       <section className={styles.equipmentSection}>
 	           <h2 className={styles.sectionTitle}>Equipment Rental</h2>
 	           <div className={styles.equipmentContainer}>
-	               {equipmentItems.map((item) => (
-	                   <div key={item.id} className={styles.equipmentItem}>
-	                       <div className={styles.equipmentInfo}>
-	                           <h3>{item.name}</h3>
-	                           {item.brand && <p className={styles.brand}>Brand: {item.brand}</p>}
-	                           {item.type && <p className={styles.type}>Type: {item.type}</p>}
-	                           <p className={styles.price}>
-	                               {item.price.toLocaleString("vi-VN")} VND
-	                           </p>
-	                           {item.stock !== undefined && (
-	                               <p className={styles.stock}>
-	                                   Available: {item.stock}
-	                               </p>
-	                           )}
-	                       </div>
-	                       <div className={styles.quantityControl}>
-	                           <button
-	                               className={`${styles.quantityButton} ${styles.decreaseButton}`}
-	                               onClick={() =>
-	                                   handleQuantityChange(
-	                                       item.id,
-	                                       item.quantity - 1
-	                                   )
-	                               }
-	                               aria-label={`Decrease ${item.name} quantity`}
-	                               disabled={item.quantity === 0}
-	                           >
-	                               -
-	                           </button>
-	                           <span className={styles.quantity}>
-	                               {item.quantity}
-	                           </span>
-	                           <button
-	                               className={`${styles.quantityButton} ${styles.increaseButton}`}
-	                               onClick={() =>
-	                                   handleQuantityChange(
-	                                       item.id,
-	                                       item.quantity + 1
-	                                   )
-	                               }
-	                               aria-label={`Increase ${item.name} quantity`}
-	                               disabled={item.stock !== undefined && item.quantity >= item.stock}
-	                           >
-	                               +
-	                           </button>
+	               {Object.entries(groupedEquipment).map(([type, items]) => (
+	                   <div key={type} className={styles.categoryContainer}>
+	                       <h3 className={styles.categoryTitle}>{type}</h3>
+	                       <div className={styles.itemsGrid}>
+	                           {items.map((item) => (
+	                               <div key={item.id} className={styles.equipmentItem}>
+	                                   <div className={styles.equipmentInfo}>
+	                                       <h3>{item.name}</h3>
+	                                       {item.brand && <p className={styles.brand}>Brand: {item.brand}</p>}
+	                                       <p className={styles.price}>
+	                                           {item.price.toLocaleString("vi-VN")} VND
+	                                       </p>
+	                                       {item.stock !== undefined && (
+	                                           <p className={styles.stock}>
+	                                               Available: {item.stock}
+	                                           </p>
+	                                       )}
+	                                   </div>
+	                                   <div className={styles.quantityControl}>
+	                                       <button
+	                                           className={`${styles.quantityButton} ${styles.decreaseButton}`}
+	                                           onClick={() =>
+	                                               handleQuantityChange(
+	                                                   item.id,
+	                                                   item.quantity - 1
+	                                               )
+	                                           }
+	                                           aria-label={`Decrease ${item.name} quantity`}
+	                                           disabled={item.quantity === 0}
+	                                       >
+	                                           -
+	                                       </button>
+	                                       <span className={styles.quantity}>
+	                                           {item.quantity}
+	                                       </span>
+	                                       <button
+	                                           className={`${styles.quantityButton} ${styles.increaseButton}`}
+	                                           onClick={() =>
+	                                               handleQuantityChange(
+	                                                   item.id,
+	                                                   item.quantity + 1
+	                                               )
+	                                           }
+	                                           aria-label={`Increase ${item.name} quantity`}
+	                                           disabled={item.stock !== undefined && item.quantity >= item.stock}
+	                                       >
+	                                           +
+	                                       </button>
+	                                   </div>
+	                               </div>
+	                           ))}
 	                       </div>
 	                   </div>
 	               ))}

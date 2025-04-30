@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Optional
 import uuid # Add uuid for unique payment description
 
 from app.models.enums import BookingStatus, CourtStatus, PaymentStatus, PaymentMethod # Add PaymentMethod
-from app.database import get_db # Assuming get_db is correctly set up
+from app.database import get_db
 
 # --- Helper Functions to Fetch Item Details and Prices ---
 
@@ -361,77 +361,162 @@ def process_order(
 
 def get_user_orders(customer_id: int, db: pymysql.connections.Connection) -> List[Dict[str, Any]]:
     """
-    Retrieves all orders and their details for a given customer.
+    Retrieves all orders and their details for a given customer, including
+    linked training session details if applicable.
     """
     orders_list = []
     try:
-        with db.cursor() as cursor:
-            # 1. Fetch all orders for the customer
-            cursor.execute(
-                "SELECT OrderID, OrderDate, TotalAmount FROM OrderTable WHERE CustomerID = %s ORDER BY OrderDate DESC",
-                (customer_id,)
-            )
-            orders = cursor.fetchall()
-            if not orders:
-                return [] # No orders found for this customer
+        # Use DictCursor to get results as dictionaries
+        with db.cursor(pymysql.cursors.DictCursor) as cursor: # Ensure DictCursor is used
 
-            # 2. For each order, fetch associated details
-            for order in orders:
-                order_id = order['OrderID']
-                order_details = {
+            # 1. Fetch all base order details for the customer, JOIN with Session
+            # Use aliases (o, ts) for clarity and backticks for safety
+            sql_base_orders = """
+            SELECT
+                `o`.`OrderID`,
+                `o`.`OrderDate`,
+                `o`.`TotalAmount`,
+                `o`.`SessionID` AS `order_session_id`,
+                `ts`.`SessionID` AS `session_SessionID`,
+                `ts`.`Type` AS `session_Type`,
+                `ts`.`StartDate` AS `session_StartDate`,
+                `ts`.`EndDate` AS `session_EndDate`,
+                `ts`.`Price` AS `session_Price`
+            FROM `OrderTable` `o`
+            LEFT JOIN `Training_Session` `ts` ON `o`.`SessionID` = `ts`.`SessionID`
+            WHERE `o`.`CustomerID` = %s
+            ORDER BY `o`.`OrderDate` DESC
+            """
+            cursor.execute(sql_base_orders, (customer_id,))
+            orders_base_data = cursor.fetchall()
+            
+            logger.debug(f"Fetched base order data for CustomerID {customer_id}: {orders_base_data}")
+            # Log specific details for Order #12 if found
+
+            if not orders_base_data:
+                return []
+
+            orders_dict: Dict[int, Dict[str, Any]] = {}
+            order_ids: List[int] = []
+
+            for base_order in orders_base_data:
+                order_id = base_order['OrderID']
+                order_ids.append(order_id)
+
+                session_details = None
+                if base_order['order_session_id'] is not None and base_order['session_SessionID'] is not None:
+                     session_details = {
+                         "SessionID": base_order['session_SessionID'],
+                         "Type": base_order['session_Type'],
+                         "StartDate": base_order['session_StartDate'],
+                         "EndDate": base_order['session_EndDate'],
+                         "Price": base_order['session_Price']
+                     }
+
+                orders_dict[order_id] = {
                     "order_id": order_id,
-                    "order_date": order['OrderDate'],
-                    "total_amount": order['TotalAmount'],
+                    "order_date": base_order['OrderDate'],
+                    "total_amount": base_order['TotalAmount'],
                     "bookings": [],
                     "equipment_rentals": [],
-                    "food_items": []
+                    "food_items": [],
+                    "session": session_details
                 }
 
-                # Fetch Bookings associated with the order
-                cursor.execute(
-                    """
-                    SELECT
-                        b.BookingID, b.StartTime, b.Endtime, b.Status, b.TotalPrice,
-                        c.Court_ID, c.Type as CourtType, c.HourRate
-                    FROM Booking b
-                    JOIN Court c ON b.CourtID = c.Court_ID
-                    WHERE b.OrderID = %s AND b.CustomerID = %s
-                    """,
-                    (order_id, customer_id)
-                )
-                bookings = cursor.fetchall()
-                order_details["bookings"] = bookings
+            if not order_ids:
+                return []
 
-                # Fetch Equipment Rentals associated with the order
-                cursor.execute(
-                    """
-                    SELECT
-                        r.EquipmentID, e.Name, e.Brand, e.Type as EquipmentType, e.Price
-                    FROM Rent r
-                    JOIN Equipment e ON r.EquipmentID = e.EquipmentID
-                    WHERE r.OrderID = %s
-                    """,
-                    (order_id,)
-                )
-                equipment_rentals = cursor.fetchall()
-                order_details["equipment_rentals"] = equipment_rentals
+            # 2. Fetch associated details in batches using IN clause (with backticks)
 
-                # Fetch Food Items associated with the order
-                cursor.execute(
-                    """
-                    SELECT
-                        `of`.`FoodID`, `cf`.`Name`, `cf`.`Category` as FoodCategory, `cf`.`Price`
-                    FROM `OrderFood` `of`
-                    JOIN `CafeteriaFood` `cf` ON `of`.`FoodID` = `cf`.`FoodID`
-                    WHERE `of`.`OrderID` = %s
-                    """,
-                    (order_id,)
-                )
-                food_items = cursor.fetchall()
-                order_details["food_items"] = food_items
+            # Fetch Bookings
+            sql_bookings = """
+            SELECT
+                `b`.`OrderID`,
+                `b`.`BookingID`,
+                `b`.`StartTime`,
+                `b`.`Endtime`,
+                `b`.`Status`,
+                `b`.`TotalPrice`,
+                `b`.`CourtID` AS `Court_ID`,
+                `c`.`Type` AS `CourtType`,
+                `c`.`HourRate`
+            FROM `Booking` `b`
+            JOIN `Court` `c` ON `b`.`CourtID` = `c`.`Court_ID`
+            WHERE `b`.`OrderID` IN %s
+            """
+            cursor.execute(sql_bookings, (order_ids,))
+            bookings = cursor.fetchall()
+            for booking in bookings:
+                oid = booking['OrderID']
+                if oid in orders_dict:
+                    booking_data = {
+                        "BookingID": booking['BookingID'],
+                        "StartTime": booking['StartTime'],
+                        "Endtime": booking['Endtime'],
+                        "Status": booking['Status'],
+                        "TotalPrice": booking['TotalPrice'],
+                        "Court_ID": booking['Court_ID'],
+                        "CourtType": booking['CourtType'],
+                        "HourRate": booking['HourRate'],
+                    }
+                    orders_dict[oid]['bookings'].append(booking_data)
 
-                orders_list.append(order_details)
 
+            # Fetch Equipment Rentals
+            sql_equipment = """
+            SELECT
+                `r`.`OrderID`,
+                `e`.`EquipmentID`,
+                `e`.`Name`,
+                `e`.`Brand`,
+                `e`.`Type` AS `EquipmentType`,
+                `e`.`Price`
+            FROM `Rent` `r`
+            JOIN `Equipment` `e` ON `r`.`EquipmentID` = `e`.`EquipmentID`
+            WHERE `r`.`OrderID` IN %s
+            """
+            cursor.execute(sql_equipment, (order_ids,))
+            equipment_rentals = cursor.fetchall()
+            for rental in equipment_rentals:
+                 oid = rental['OrderID']
+                 if oid in orders_dict:
+                    rental_data = {
+                        "EquipmentID": rental['EquipmentID'],
+                        "Name": rental['Name'],
+                        "Brand": rental['Brand'],
+                        "EquipmentType": rental['EquipmentType'],
+                        "Price": rental['Price'],
+                    }
+                    orders_dict[oid]['equipment_rentals'].append(rental_data)
+
+            # Fetch Food Items (Corrected Query)
+            sql_food = """
+            SELECT
+                `of`.`OrderID`,
+                `cf`.`FoodID`,
+                `cf`.`Name`,
+                `cf`.`Category` AS `FoodCategory`,
+                `cf`.`Price`
+            FROM `OrderFood` `of`
+            JOIN `CafeteriaFood` `cf` ON `of`.`FoodID` = `cf`.`FoodID`
+            WHERE `of`.`OrderID` IN %s
+            """
+            # ^-- Added backticks around table names (`OrderFood`, `CafeteriaFood`),
+            #     aliases (`of`, `cf`), and potentially ambiguous column names.
+            cursor.execute(sql_food, (order_ids,))
+            food_items = cursor.fetchall()
+            for food in food_items:
+                oid = food['OrderID']
+                if oid in orders_dict:
+                    food_data = {
+                        "FoodID": food['FoodID'],
+                        "Name": food['Name'],
+                        "FoodCategory": food['FoodCategory'],
+                        "Price": food['Price'],
+                    }
+                    orders_dict[oid]['food_items'].append(food_data)
+
+            orders_list = list(orders_dict.values())
         return orders_list
 
     except pymysql.Error as db_err:

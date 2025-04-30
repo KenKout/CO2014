@@ -51,11 +51,6 @@ const ProfilePage = () => {
               <p>No recent bookings.</p>
               {/* Placeholder for booking history list */}
             </div>
-            <div className={styles.profileSection}>
-              <h3>Account Settings</h3>
-              <button className={styles.editButton}>Edit Profile</button>
-              <button className={styles.logoutButton}>Logout</button>
-            </div>
           </div>
         </div>
       </div>

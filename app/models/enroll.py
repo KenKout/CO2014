@@ -37,7 +37,7 @@ def is_user_enrolled(customer_id: int, session_id: int, db: pymysql.connections.
         logger.exception(f"Unexpected error checking enrollment for customer {customer_id}, session {session_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-def enroll_user_in_session(customer_id: int, session_id: int, price: int, payment_method: PaymentMethod, db: pymysql.connections.Connection) -> Dict[str, Any]:
+def enroll_user_in_session(customer_id: int, session_id: int, price: int, payment_method: PaymentMethod.CREDIT_CARD, db: pymysql.connections.Connection) -> Dict[str, Any]:
     """
     Enroll a user in a training session by creating an order and an enrollment record.
     Returns a dictionary containing the OrderID, PaymentID, and Payment Description.

@@ -4,169 +4,88 @@
 import styles from "@/styles/Booking.module.css";
 import { EquipmentItem } from "./Equipments";
 import { FoodDrinkItem } from "./FoodAndDrink";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
-import ConfirmationModal from "./ConfirmationModal";
-import { TrainingSession } from "./TrainingSessionForm"; // Import TrainingSession type
+import { TrainingSession } from "./TrainingSessionForm";
 import { createApiClient } from '@/utils/api';
+import { useAuth } from '@/context/AuthContext';
+// Import CourtData type from BookingForm
+import { CourtData } from './BookingForm';
 
-// Define possible payment methods
-type PaymentMethod = "momo" | "zalopay" | "bank-transfer";
+// Define frontend payment methods
+type FrontendPaymentMethod = "momo" | "zalopay" | "bank-transfer";
+// Backend expects specific enum values
+type BackendPaymentMethod = "Credit Card" | "Cash";
 type BookingMode = "court" | "training"; // Add BookingMode type
 
-// Define structure for confirmation details - might need adjustment later if needed
-interface ConfirmationDetails {
-    mode: BookingMode; // Track which type of booking it was
-    // Court details (if applicable)
-    date?: string;
-    startTime?: string;
-    endTime?: string;
-    duration?: number;
-    courtNumber?: number;
-    courtType?: string;
-    courtPrice?: number;
-    // Training details (if applicable)
-    sessionName?: string;
-    sessionCoach?: string;
-    sessionSchedule?: string;
-    sessionPrice?: number;
-    // Common details
-    equipmentTotal: number;
-    foodDrinkTotal: number;
-    grandTotal: number;
-}
+// Remove ConfirmationDetails interface - no longer needed
 
 interface TotalProps {
-    mode: BookingMode; // Receive the current mode
+    mode: BookingMode;
     bookingData: {
-        // For court booking
         date?: string;
         startTime?: string;
         endTime?: string;
         duration?: number;
         selectedCourt: number | null;
     };
-    selectedTrainingSession: TrainingSession | null; // For training booking
+    selectedTrainingSession: TrainingSession | null;
     equipmentItems: EquipmentItem[];
     foodDrinkItems: FoodDrinkItem[];
+    // Add selectedCourtData prop
+    selectedCourtData: CourtData | null;
 }
 
-// Define the fixed hourly rates
-const NORMAL_COURT_RATE = 90000;
-const PREMIUM_COURT_RATE = 140000;
-// Define what type string signifies a premium court from your API
-const PREMIUM_COURT_TYPE_IDENTIFIER = 'Air-conditioner'; // Adjust if your API uses a different type name
+// Remove fixed hourly rates and type identifier
+// const NORMAL_COURT_RATE = 90000;
+// const PREMIUM_COURT_RATE = 140000;
+// const PREMIUM_COURT_TYPE_IDENTIFIER = 'Air-conditioner';
 
-// Destructure props including mode and selectedTrainingSession
+// Destructure props including selectedCourtData
 const Total = ({
     mode,
     bookingData,
     selectedTrainingSession,
     equipmentItems,
     foodDrinkItems,
+    selectedCourtData, // Destructure the new prop
 }: TotalProps) => {
     const router = useRouter();
 
-    // --- State (remains mostly the same) ---
+    // --- State ---
+    const { token, logout } = useAuth(); // Get auth token and logout function
     const [selectedPaymentMethod, setSelectedPaymentMethod] =
-        useState<PaymentMethod | null>(null);
+        useState<FrontendPaymentMethod | null>(null); // Use FrontendPaymentMethod type
     const [isProcessing, setIsProcessing] = useState(false);
-    const [showConfirmationModal, setShowConfirmationModal] = useState(false);
-    const [confirmationDetails, setConfirmationDetails] =
-        useState<ConfirmationDetails | null>(null);
+    const [apiError, setApiError] = useState<string | null>(null);
+    const [apiSuccess, setApiSuccess] = useState<string | null>(null);
+    const [showQRCode, setShowQRCode] = useState(false);
+    const [qrCodeUrl, setQRCodeUrl] = useState<string | null>(null);
 
     // --- Calculation Logic (Updated for Mode) ---
-    // State to store court data (only need type now, HourRate from API is ignored for pricing)
-    const [courtData, setCourtData] = useState<{ [key: number]: { type: string } } | null>(null);
-    const [loadingCourtData, setLoadingCourtData] = useState(false);
+    // Remove internal state and useEffect for fetching court data (lines 64-125)
 
-    // Fetch court data when component mounts or selectedCourt changes
-    useEffect(() => {
-        const fetchCourtData = async () => {
-            // Only fetch if mode is court and a court is selected
-            if (mode !== "court" || bookingData.selectedCourt === null) {
-                // If selection changes away from court, clear old court data to avoid miscalculations
-                if (courtData && bookingData.selectedCourt === null) {
-                    setCourtData(null);
-                }
-                return;
-            };
-
-            // Avoid refetching if data for this court already exists
-            if (courtData && courtData[bookingData.selectedCourt]) {
-                return;
-            }
-
-            try {
-                setLoadingCourtData(true);
-                const apiClient = createApiClient(null); // Assuming no auth needed for public court info
-                const response = await apiClient.get(`/public/court/${bookingData.selectedCourt}`);
-
-                if (response.data && response.data.court) {
-                    // Store only the type, as pricing is now fixed based on type
-                    setCourtData(prevData => ({ // Use functional update for safety
-                        ...prevData,
-                        [bookingData.selectedCourt!]: { // Non-null assertion safe here due to outer check
-                            type: response.data.court.Type
-                        }
-                    }));
-                } else {
-                    console.warn(`Court data not found for court ${bookingData.selectedCourt}`);
-                    // Optionally clear data for this court if fetch fails
-                    setCourtData(prevData => {
-                        const newData = {...prevData};
-                        if (bookingData.selectedCourt !== null) {
-                             delete newData[bookingData.selectedCourt];
-                        }
-                        return newData;
-                    });
-                }
-                setLoadingCourtData(false);
-            } catch (err) {
-                console.error(`Error fetching court data for court ${bookingData.selectedCourt}:`, err);
-                setLoadingCourtData(false);
-                 // Optionally clear data for this court on error
-                setCourtData(prevData => {
-                     const newData = {...prevData};
-                     if (bookingData.selectedCourt !== null) {
-                          delete newData[bookingData.selectedCourt];
-                     }
-                     return newData;
-                 });
-            }
-        };
-
-        fetchCourtData();
-    // Depend on mode and selectedCourt
-    }, [mode, bookingData.selectedCourt]); // Removed courtData from dependency array to prevent loops if structure changes
-
-    // --- MODIFIED calculateCourtPrice ---
+    // --- REFACTORED calculateCourtPrice ---
     const calculateCourtPrice = (): number => {
+        // Use selectedCourtData prop instead of internal state
         if (
-            !bookingData.date || // Still need date/time for booking validity, but not price
-            !bookingData.startTime ||
             !bookingData.duration ||
             bookingData.duration <= 0 ||
-            bookingData.selectedCourt === null ||
-            !courtData || // Need court data object
-            !courtData[bookingData.selectedCourt] || // Need data for the *specific* court
-            loadingCourtData // Don't calculate if still loading type info
+            !selectedCourtData // Check if selectedCourtData object exists
         ) {
-            return 0; // Return 0 if essential info is missing
+            return 0; // Return 0 if duration or court data is missing
         }
 
-        // Determine the rate based *only* on the court type from fetched data
-        const courtType = courtData[bookingData.selectedCourt].type;
-        const hourlyRate = courtType === PREMIUM_COURT_TYPE_IDENTIFIER
-                            ? PREMIUM_COURT_RATE
-                            : NORMAL_COURT_RATE;
+        // Use the hourRate directly from the selectedCourtData prop
+        const hourlyRate = selectedCourtData.hourRate;
 
-        // Removed all time-based surcharge logic (peak, weekend)
+        // Removed hardcoded rates and type checks
+        // Removed time-based surcharge logic (assuming BookingForm handles this now)
 
-        // Final price is rate * duration
+        // Final price is fetched rate * duration
         return hourlyRate * bookingData.duration;
     };
-    // --- END MODIFICATION ---
+    // --- END REFACTOR ---
 
     const calculateTrainingPrice = (): number => {
         return selectedTrainingSession?.price || 0;
@@ -195,131 +114,199 @@ const Total = ({
     // Determine if payment should be disabled (Updated for Mode)
     const isBookingSelectionValid =
         (mode === "court" &&
-            bookingData.selectedCourt !== null &&
+            selectedCourtData !== null && // Check if court data object is present
             bookingData.duration &&
-            bookingData.duration > 0 &&
-            !loadingCourtData && // Also wait for court type data to load
-            courtData && courtData[bookingData.selectedCourt] // Ensure type data is present
+            bookingData.duration > 0
             ) ||
         (mode === "training" && selectedTrainingSession !== null);
 
     const isPaymentDisabled =
-        !isBookingSelectionValid ||
-        grandTotal <= 0 ||
-        !selectedPaymentMethod ||
-        isProcessing;
+        (!token) || // Disable if not logged in
+        (mode === 'training' && 
+          (!selectedTrainingSession || !selectedPaymentMethod || isProcessing)) ||
+        (mode === 'court' && 
+          (!isBookingSelectionValid || grandTotal <= 0 || !selectedPaymentMethod || isProcessing));
 
-    // --- Handler for Payment Form Submission (Updated for Mode) ---
-    const handlePaymentSubmit = async (
-        event: React.FormEvent<HTMLFormElement>
-    ) => {
+    // --- Handler for Order Submission ---
+    const handleOrderSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        // Add more specific guards based on mode
-        if (isPaymentDisabled || !selectedPaymentMethod) return;
-        if (
-            mode === "court" &&
-            (!bookingData.date ||
-                !bookingData.startTime ||
-                !bookingData.endTime ||
-                !bookingData.duration ||
-                !bookingData.selectedCourt ||
-                !courtData || !courtData[bookingData.selectedCourt]) // Ensure court type loaded
-        )
+        setApiError(null);
+        setApiSuccess(null);
+
+        // Basic validation and checks
+        if (isPaymentDisabled || !selectedPaymentMethod || !token) {
+            setApiError("Cannot proceed. Please ensure you are logged in, have selected items, and chosen a payment method.");
             return;
-        if (mode === "training" && !selectedTrainingSession) return;
+        }
+        if (mode !== 'court') {
+             setApiError("Training session booking is handled separately."); // Or implement training booking logic
+             return;
+        }
+        if (!bookingData.selectedCourt || !bookingData.date || !bookingData.startTime || !bookingData.endTime) {
+            setApiError("Please select a court and valid time slot.");
+            return;
+        }
 
         setIsProcessing(true);
-        console.log(
-            `Processing payment for ${grandTotal.toLocaleString(
-                "vi-VN"
-            )} VND via ${selectedPaymentMethod} (Mode: ${mode})`
-        );
 
-        await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulate delay
+        // --- Map Frontend Payment Method to Backend Enum ---
+        // TODO: Backend currently only supports 'Credit Card' and 'Cash'.
+        // Mapping all frontend options to 'Credit Card' for now.
+        // This needs alignment between frontend options and backend capabilities.
+        const backendPaymentMethod: BackendPaymentMethod = "Credit Card";
 
-        console.log("Payment simulation complete.");
-        setIsProcessing(false);
+        // --- Prepare Order Payload ---
+        const courtOrders = [{
+            court_id: bookingData.selectedCourt,
+            // Fix timezone issue by explicitly handling the GMT+7 offset
+            start_time: createUTCDate(bookingData.date, bookingData.startTime),
+            end_time: createUTCDate(bookingData.date, bookingData.endTime),
 
-        // Prepare details for the confirmation modal (Updated for Mode)
-        let details: ConfirmationDetails;
+        }];
 
-        if (
-            mode === "court" &&
-            bookingData.selectedCourt &&
-            bookingData.date &&
-            bookingData.startTime &&
-            bookingData.endTime &&
-            bookingData.duration &&
-            courtData && // Ensure courtData exists before accessing
-            courtData[bookingData.selectedCourt] // Ensure data for the specific court exists
-        ) {
-            // Get court type from fetched data
-            const courtType = courtData[bookingData.selectedCourt].type;
+        const equipmentOrders = equipmentItems
+            .filter(item => item.quantity > 0)
+            // Backend model currently doesn't support quantity, just send IDs
+            .map(item => ({ equipment_id: item.id }));
+            // If quantity needed later: .map(item => ({ equipment_id: item.id, quantity: item.quantity }));
 
-            details = {
-                mode: "court",
-                date: bookingData.date,
-                startTime: bookingData.startTime,
-                endTime: bookingData.endTime,
-                duration: bookingData.duration,
-                courtNumber: bookingData.selectedCourt,
-                courtType: courtType, // Use the fetched type
-                courtPrice: bookingPrice, // Use the price calculated with the new logic
-                equipmentTotal: equipmentTotal,
-                foodDrinkTotal: foodDrinkTotal,
-                grandTotal: grandTotal,
-            };
-        } else if (mode === "training" && selectedTrainingSession) {
-            details = {
-                mode: "training",
-                sessionName: `Level: ${selectedTrainingSession.level}`,
-                sessionCoach: selectedTrainingSession.coachName
-                    ? selectedTrainingSession.coachName
-                    : `Coach ID: ${selectedTrainingSession.coachID}`,
-                sessionSchedule: selectedTrainingSession.schedule,
-                sessionPrice: bookingPrice, // Use calculated bookingPrice
-                equipmentTotal: equipmentTotal,
-                foodDrinkTotal: foodDrinkTotal,
-                grandTotal: grandTotal,
-            };
-        } else {
-            console.error(
-                "Error creating confirmation details: Invalid state or missing data."
-            );
-            // Handle error appropriately, maybe show a message to the user
+        const foodOrders = foodDrinkItems
+            .filter(item => item.quantity > 0)
+            // Backend model currently doesn't support quantity, just send IDs
+            .map(item => ({ food_id: item.id }));
+            // If quantity needed later: .map(item => ({ food_id: item.id, quantity: item.quantity }));
+
+        // Ensure at least one type of order exists
+        if (courtOrders.length === 0 && equipmentOrders.length === 0 && foodOrders.length === 0) {
+            setApiError("Your order is empty. Please select a court, equipment, or food/drink items.");
             setIsProcessing(false);
-            return; // Exit if details cannot be formed
+            return;
         }
 
-        setConfirmationDetails(details);
-        setShowConfirmationModal(true);
+        const orderPayload = {
+            court_orders: courtOrders.length > 0 ? courtOrders : null,
+            equipment_orders: equipmentOrders.length > 0 ? equipmentOrders : null,
+            food_orders: foodOrders.length > 0 ? foodOrders : null,
+            payment_method: backendPaymentMethod,
+        };
+
+        // --- API Call ---
+        try {
+            const apiClient = createApiClient(token, logout); // Pass token and logout
+            const response = await apiClient.post('/user/order/', orderPayload);
+
+            // Handle Success
+            setApiSuccess(`Order #${response.data.order_id} placed successfully! Total: ${response.data.total_amount.toFixed(2)} VND. Payment ID: ${response.data.payment_id}`);
+            console.log("Order Response:", response.data);
+
+            // Optionally clear booking state here
+            // e.g., resetBookingState(); // You'd need to pass a reset function from the parent page
+
+            // Set QR code based on payment method
+            let qrUrl = '';
+            if (selectedPaymentMethod === 'momo') {
+                qrUrl = '/images/momo.jpg'; // Replace with actual QR code URL for Momo
+            } else if (selectedPaymentMethod === 'zalopay') {
+                qrUrl = '/images/zalo.jpg'; // Replace with actual QR code URL for ZaloPay
+            } else if (selectedPaymentMethod === 'bank-transfer') {
+                qrUrl = '/images/bank.jpg'; // Replace with actual QR code URL for Bank Transfer
+            }
+            setQRCodeUrl(qrUrl);
+            setShowQRCode(true);
+            // Do not redirect to order history
+
+        } catch (err: any) {
+            console.error("Order submission failed:", err);
+            const errorDetail = err.response?.data?.detail || err.message || "An unknown error occurred while placing the order.";
+            setApiError(`Order failed: ${errorDetail}`);
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
-    // --- Handler to Close Modal and Navigate Home (No change needed) ---
-    const handleCloseModal = () => {
-        setShowConfirmationModal(false);
-        setConfirmationDetails(null);
-        // Consider resetting booking state here if needed before navigating
-        router.push("/");
-    };
+// Add debugging to see what API endpoints are available
+const handleTrainingSessionOrder = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setApiError(null);
+    setApiSuccess(null);
+  
+    if (!selectedPaymentMethod || !token || !selectedTrainingSession) {
+      setApiError("Cannot proceed. Please ensure you are logged in, have selected a training session, and chosen a payment method.");
+      return;
+    }
+  
+    setIsProcessing(true);
+  
+    try {
+      const apiClient = createApiClient(token, logout);
+      
+      // Debug: Log the training session object to see its structure
+      console.log("Selected training session:", selectedTrainingSession);
+      
+      // Try to get the session ID from the training session object
+      const sessionId = selectedTrainingSession.id 
 
-    // --- Helper to get Button Text (No change needed) ---
+      console.log("Session ID to be used:", sessionId);
+      
+      // Let's try a different API endpoint structure
+      // Based on your router code, the correct path might be:
+      const response = await apiClient.post(
+        `/user/training-sessions/${sessionId}/enroll`, 
+        { payment_method: "Credit Card" }
+      );
+  
+      // Handle Success
+      setApiSuccess(`Successfully enrolled in training session! Order #${response.data.order_id} placed. Total: ${selectedTrainingSession.price.toLocaleString("vi-VN")} VND. Payment ID: ${response.data.payment_id}`);
+      
+      // Set QR code based on payment method
+      let qrUrl = '';
+      if (selectedPaymentMethod === 'momo') {
+          qrUrl = 'https://example.com/momo-qr-code.png'; // Replace with actual QR code URL for Momo
+      } else if (selectedPaymentMethod === 'zalopay') {
+          qrUrl = 'https://example.com/zalopay-qr-code.png'; // Replace with actual QR code URL for ZaloPay
+      } else if (selectedPaymentMethod === 'bank-transfer') {
+          qrUrl = 'https://example.com/bank-transfer-qr-code.png'; // Replace with actual QR code URL for Bank Transfer
+      }
+      setQRCodeUrl(qrUrl);
+      setShowQRCode(true);
+      // Do not redirect to order history
+    } catch (err: any) {
+      console.error("Training session enrollment failed:", err);
+      
+      // Add more detailed error logging
+      if (err.response) {
+        console.error("Error response data:", err.response.data);
+        console.error("Error response status:", err.response.status);
+        console.error("Error response headers:", err.response.headers);
+      } else if (err.request) {
+        console.error("Error request:", err.request);
+      }
+      
+      const errorDetail = err.response?.data?.detail || err.message || "An unknown error occurred while enrolling in the training session.";
+      setApiError(`Enrollment failed: ${errorDetail}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+    // --- Helper to get Button Text ---
     const getButtonText = () => {
-        // ... (button text logic remains the same) ...
+        if (!token) return "Please Login to Book";
         if (isProcessing) return "Processing...";
-        const amountText =
-            grandTotal > 0 ? `${grandTotal.toLocaleString("vi-VN")} VND` : "";
-        switch (selectedPaymentMethod) {
-            case "momo":
-                return `Pay ${amountText} with Momo`;
-            case "zalopay":
-                return `Pay ${amountText} with ZaloPay`;
-            case "bank-transfer":
-                return `Confirm Bank Transfer Booking`;
-            default:
-                return "Select Payment Method Above";
+        
+        if (mode === 'training') {
+          if (!selectedTrainingSession) return "Select a Training Session";
+          if (!selectedPaymentMethod) return "Select Payment Method";
+          
+          const amountText = `${selectedTrainingSession.price.toLocaleString("vi-VN")} VND`;
+          return `Book Training Session (${amountText})`;
+        } else { // court mode
+          if (!isBookingSelectionValid || grandTotal <= 0) return "Select Items to Order";
+          if (!selectedPaymentMethod) return "Select Payment Method";
+      
+          const amountText = `${grandTotal.toLocaleString("vi-VN")} VND`;
+          return `Place Order (${amountText})`;
         }
-    };
+      };
 
     // --- JSX Structure (Mostly unchanged, relies on correct calculations above) ---
     return (
@@ -331,11 +318,11 @@ const Total = ({
                     {/* Conditionally display Court or Training details */}
                     {mode === "court" &&
                         bookingPrice > 0 &&
-                        bookingData.selectedCourt && courtData && courtData[bookingData.selectedCourt] && ( // Check if courtData is loaded
+                        selectedCourtData && ( // Check if selectedCourtData is loaded
                             <div className={styles.summaryItem}>
                                 <span>
-                                    Court {bookingData.selectedCourt}
-                                    ({courtData[bookingData.selectedCourt].type}) {/* Display type */}
+                                    Court {selectedCourtData.id}
+                                    {selectedCourtData.isPremium ? " (Premium)" : ""} {/* Display premium status */}
                                     ({bookingData.duration || 0}h):
                                 </span>
                                 <span className={styles.summaryPrice}>
@@ -343,12 +330,7 @@ const Total = ({
                                 </span>
                             </div>
                         )}
-                    {/* Loading indicator while court type is fetched */}
-                    {mode === 'court' && loadingCourtData && bookingData.selectedCourt && (
-                        <div className={styles.summaryItem}>
-                            <span>Loading court details...</span>
-                        </div>
-                    )}
+                    {/* Remove loading indicator for court type */}
                     {mode === "training" &&
                         selectedTrainingSession &&
                         bookingPrice > 0 && (
@@ -391,9 +373,8 @@ const Total = ({
                         </span>
                         <span className={styles.grandTotalPrice}>
                             {/* Show 0 or loading if price isn't calculated yet */}
-                            {loadingCourtData && mode === 'court'
-                                ? "Calculating..."
-                                : `${grandTotal.toLocaleString("vi-VN")} VND`}
+                            {/* Remove loading state check */}
+                            {`${grandTotal.toLocaleString("vi-VN")} VND`}
                         </span>
                     </div>
                 </div>
@@ -424,7 +405,7 @@ const Total = ({
                                 checked={selectedPaymentMethod === "momo"}
                                 onChange={(e) =>
                                     setSelectedPaymentMethod(
-                                        e.target.value as PaymentMethod
+                                        e.target.value as FrontendPaymentMethod // Use correct type
                                     )
                                 }
                                 disabled={isProcessing}
@@ -451,7 +432,7 @@ const Total = ({
                                 checked={selectedPaymentMethod === "zalopay"}
                                 onChange={(e) =>
                                     setSelectedPaymentMethod(
-                                        e.target.value as PaymentMethod
+                                        e.target.value as FrontendPaymentMethod // Use correct type
                                     )
                                 }
                                 disabled={isProcessing}
@@ -480,7 +461,7 @@ const Total = ({
                                 }
                                 onChange={(e) =>
                                     setSelectedPaymentMethod(
-                                        e.target.value as PaymentMethod
+                                        e.target.value as FrontendPaymentMethod // Use correct type
                                     )
                                 }
                                 disabled={isProcessing}
@@ -500,75 +481,101 @@ const Total = ({
                     </div>
                 </div>
 
-                <form
-                    onSubmit={handlePaymentSubmit}
+                {/* Submit Button */}
+                {/* Use handleOrderSubmit */}
+                <form 
+                    onSubmit={mode === "court" ? handleOrderSubmit : handleTrainingSessionOrder} 
                     className={styles.paymentFormContainer}
                 >
-                    {/* Conditional Info (No change needed) */}
-                    {selectedPaymentMethod === "momo" && (
-                        <div className={styles.digitalWalletInfo}>
-                            <p>You will be redirected to Momo to complete the payment.</p>
-                        </div>
-                    )}
-                    {selectedPaymentMethod === "zalopay" && (
-                        <div className={styles.digitalWalletInfo}>
-                             <p>You will be redirected to ZaloPay to complete the payment.</p>
-                        </div>
-                    )}
-                    {selectedPaymentMethod === "bank-transfer" && (
-                        <div className={styles.digitalWalletInfo}>
-                            <p>Please transfer the total amount to the account details shown after confirming the booking.</p>
+                     {/* Conditional Info */}
+                     {selectedPaymentMethod === "momo" && (
+                         <div className={styles.digitalWalletInfo}>
+                             <p>You will be redirected to Momo to complete the payment.</p>
+                         </div>
+                     )}
+                     {selectedPaymentMethod === "zalopay" && (
+                         <div className={styles.digitalWalletInfo}>
+                              <p>You will be redirected to ZaloPay to complete the payment.</p>
+                         </div>
+                     )}
+                     {selectedPaymentMethod === "bank-transfer" && (
+                         // Note: Bank transfer info might need adjustment based on actual order flow
+                         <div className={styles.digitalWalletInfo}>
+                             <p>Please transfer the total amount after placing the order. Details will be shown on the order confirmation.</p>
+                         </div>
+                     )}
+
+                    {/* Display API Success/Error Messages */}
+                    {apiError && <p className={`${styles.apiMessage} ${styles.error}`}>{apiError}</p>}
+                    {apiSuccess && <p className={`${styles.apiMessage} ${styles.success}`}>{apiSuccess}</p>}
+                    
+                    {/* QR Code Modal */}
+                    {showQRCode && qrCodeUrl && (
+                        <div className={styles.qrCodeModal}>
+                            <div className={styles.qrCodeContent}>
+                                <h3>Scan to Pay</h3>
+                                <img src={qrCodeUrl} alt="Payment QR Code" className={styles.qrCodeImage} />
+                                <button
+                                    className={styles.closeButton}
+                                    onClick={() => {
+                                        setShowQRCode(false);
+                                        router.push('/orders');
+                                    }}
+                                >
+                                    Close
+                                </button>
+                            </div>
                         </div>
                     )}
 
-                    {/* Payment Button */}
-                    {selectedPaymentMethod && ( // Only show button if a method is selected
-                        <button
-                            type="submit"
-                            className={styles.payButton}
-                            disabled={isPaymentDisabled}
-                        >
-                            {getButtonText()}
-                        </button>
-                    )}
+                    {/* Payment Button - Simplified structure */}
+                    <button
+                        type="submit"
+                        className={styles.paymentButton} // Use consistent class name if defined, or payButton
+                        disabled={isPaymentDisabled}
+                    >
+                        {getButtonText()}
+                    </button>
 
-                    {/* Disabled Messages (Updated for Mode and loading state) */}
-                    {isPaymentDisabled &&
-                        grandTotal > 0 &&
-                        !isProcessing &&
-                        !selectedPaymentMethod && ( // Check added: only show if no method selected
-                            <p className={styles.paymentDisabledMessage}>
-                                Please select a payment method.
-                            </p>
-                        )}
-                    {/* Specific message if court details are still loading */}
-                    {mode === 'court' && loadingCourtData && !isProcessing && bookingData.selectedCourt && (
-                         <p className={styles.paymentDisabledMessage}>
-                             Loading court details... Please wait.
-                         </p>
+                    {/* Display message if disabled (simplified) */}
+                    {isPaymentDisabled && !isProcessing && !token && (
+                         <p className={styles.disabledReason}>Please log in to place an order.</p>
                     )}
-                    {isPaymentDisabled &&
-                        grandTotal > 0 &&
-                        !isProcessing &&
-                        !loadingCourtData && // Only show if not loading
-                        !isBookingSelectionValid && ( // This check now includes loading state implicitly
-                            <p className={styles.paymentDisabledMessage}>
-                                {mode === "court"
-                                    ? "Please ensure court booking details (date, time, duration, court) are complete."
-                                    : "Please select a training session above."}
-                            </p>
-                        )}
+                     {isPaymentDisabled && !isProcessing && token && mode === 'training' && (
+                         <p className={styles.disabledReason}>Training booking is handled separately.</p>
+                    )}
+                    {isPaymentDisabled && !isProcessing && token && mode === 'court' && grandTotal <= 0 && (
+                         <p className={styles.disabledReason}>Please select items to order.</p>
+                    )}
+                     {isPaymentDisabled && !isProcessing && token && mode === 'court' && grandTotal > 0 && !selectedPaymentMethod && (
+                         <p className={styles.disabledReason}>Please select a payment method.</p>
+                    )}
+                     {/* Specific message if court details are still loading */}
+                     {/* Remove loadingCourtData check */}
+                     {/* {mode === 'court' && !isProcessing && bookingData.selectedCourt && ( ... )} */}
+                     {/* This specific message might no longer be needed if loading is handled elsewhere or is very fast */}
+                     {/* Remove !loadingCourtData check */}
+                     {isPaymentDisabled && !isProcessing && token && mode === 'court' && grandTotal > 0 && selectedPaymentMethod && !isBookingSelectionValid && (
+                          <p className={styles.disabledReason}>Please select a valid court and time slot.</p>
+                     )}
                 </form>
             </section>
 
-            {/* --- RENDER THE MODAL (ConfirmationModal might need internal updates to display training details) --- */}
-            <ConfirmationModal
-                isOpen={showConfirmationModal}
-                onClose={handleCloseModal}
-                details={confirmationDetails} // Pass the potentially modified details structure
-            />
+            {/* Remove Confirmation Modal section entirely */}
         </>
     );
 };
 
 export default Total;
+function createUTCDate(date: string, time: string): string {
+    // Combine date and time into a single string
+    const localDateTime = new Date(`${date}T${time}:00`);
+
+    // Convert the local date-time to UTC
+    const utcDateTime = new Date(
+        localDateTime.getTime() - localDateTime.getTimezoneOffset() * 60000
+    );
+
+    // Format the UTC date-time as an ISO string without milliseconds
+    return utcDateTime.toISOString().replace(".000Z", "Z");
+}

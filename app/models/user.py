@@ -713,3 +713,27 @@ def get_customer_id_by_username(username: str, db: pymysql.connections.Connectio
         raise HTTPException(status_code=404, detail="Customer not found")
 
     return result['CustomerID']
+
+def get_customer_count_admin(db: pymysql.connections.Connection):
+    """
+    Admin function to get the total number of customers using the GetCustomerCount() SQL function.
+    """
+    try:
+        with db.cursor() as cursor:
+            # Call the SQL function
+            cursor.execute("SELECT GetCustomerCount() AS count")
+            result = cursor.fetchone()
+            
+            if result is None:
+                logger.error("Failed to retrieve customer count")
+                raise HTTPException(status_code=500, detail="Failed to retrieve customer count")
+                
+            logger.info(f"Retrieved customer count: {result['count']}")
+            return {"count": result["count"]}
+    
+    except pymysql.Error as db_err:
+        logger.error(f"Database error getting customer count: {db_err}")
+        raise HTTPException(status_code=500, detail="Database error retrieving customer count")
+    except Exception as e:
+        logger.exception(f"Unexpected error getting customer count: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error retrieving customer count")

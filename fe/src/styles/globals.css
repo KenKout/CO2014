@@ -1197,3 +1197,61 @@ main {
     display: flex;
     align-items: center;
 }
+/* --- Header Auth Status Styles --- */
+/* No need to redefine header as it's already defined above */
+
+.auth-status {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-left: auto;
+    margin-right: 0px;
+    animation: floatIn 0.8s ease-out 0.3s forwards;
+    opacity: 0;
+}
+
+.auth-link {
+    color: #4CAF50;
+    text-decoration: none;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    border: 1px solid #4CAF50;
+    padding: 6px 12px;
+    border-radius: 6px;
+}
+
+.auth-link:hover {
+    background-color: #4CAF50;
+    color: #FFF;
+}
+
+.user-greeting {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 18px;
+    color: #232323;
+    font-weight: bold;
+}
+
+.logout-button-header {
+    background-color: transparent;
+    color: #4CAF50;
+    border: 1px solid #4CAF50;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 18px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.logout-button-header:hover {
+    background-color: #4CAF50;
+    color: white;
+}
+
+/* --- End Header Auth Status Styles --- */
