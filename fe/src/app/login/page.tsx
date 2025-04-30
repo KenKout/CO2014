@@ -327,7 +327,7 @@ export default function LoginPage() {
         // Optionally show validation hints near inputs
         return;
     }
-    console.log('Resetting password for:', recoveryEmail);
+    console.log('Resetting password...');
     // TODO: Implement API call to reset password
     setModalStep('success-step');
   };
