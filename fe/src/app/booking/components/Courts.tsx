@@ -1,98 +1,35 @@
 "use client";
 // app/booking/components/Courts.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'; 
 import styles from "@/styles/Booking.module.css";
-import { createApiClient } from '@/utils/api';
 
-interface CourtResponse {
-	Court_ID: number;
-	Status: string;
-	Type: string;
-	HourRate: number;
-}
 
-interface AvailabilityResponse {
-    available_slots: { start_time: string; end_time: string }[];
-}
 
-// Define the Court type (ensure it matches the one in page.tsx)
 interface Court {
     id: number;
-    hourRate: number; // Added hourRate if needed directly here, though features covers it
+    hourRate: number; 
     isPremium: boolean;
     name: string;
     features: string[];
 }
 
-// Define props interface for the Courts component - UPDATED
 interface CourtsProps {
     selectedCourt: number | null;
     onCourtSelect: (courtId: number) => void;
-    bookingData: {
-        date: string;
-        startTime: string;
-        endTime: string;
-        duration: number;
-        selectedCourt: number | null;
-    };
-    // Add props passed from parent
+
     courts: Court[];
     loading: boolean;
     error: string | null;
 }
 
-// Update props destructuring
+
 const Courts = ({
     selectedCourt,
     onCourtSelect,
-    bookingData,
-    courts, // Use passed courts
-    loading, // Use passed loading state
-    error // Use passed error state
+    courts, 
+    loading, 
+    error 
 }: CourtsProps) => {
-    // Remove internal state for courts, loading, error
-    // const [courts, setCourts] = useState<Court[]>([]);
-    // const [loading, setLoading] = useState(true);
-    // const [error, setError] = useState<string | null>(null);
-    
-    // Keep state for availability as it's fetched here based on selection
-    const [availability, setAvailability] = useState<{ start_time: string; end_time: string }[]>([]);
-    const [loadingAvailability, setLoadingAvailability] = useState(false);
-
-    // Remove useEffect for fetching courts (lines 46-74)
-
-    useEffect(() => {
-        const fetchAvailability = async () => {
-            if (!selectedCourt || !bookingData.date) return;
-
-            try {
-                setLoadingAvailability(true);
-                const apiClient = createApiClient(null);
-                // Corrected API path: removed extra /v1
-                let query = `/public/court/${selectedCourt}`;
-                const params: { start_time?: string; end_time?: string } = {};
-                
-                if (bookingData.startTime) {
-                    const startDateTime = new Date(`${bookingData.date}T${bookingData.startTime}`).toISOString();
-                    params.start_time = startDateTime;
-                }
-                if (bookingData.endTime) {
-                    const endDateTime = new Date(`${bookingData.date}T${bookingData.endTime}`).toISOString();
-                    params.end_time = endDateTime;
-                }
-                
-                const response = await apiClient.get(query, { params });
-                setAvailability(response.data.available_slots || []);
-                setLoadingAvailability(false);
-            } catch (err) {
-                console.error('Error fetching availability:', err);
-                setAvailability([]);
-                setLoadingAvailability(false);
-            }
-        };
-
-        fetchAvailability();
-    }, [selectedCourt, bookingData.date, bookingData.startTime, bookingData.endTime]);
 
     if (loading) {
         return <section className={styles.courtsSection}><h2 className={styles.sectionTitle}>Select a Court</h2><p>Loading courts...</p></section>;
@@ -142,29 +79,10 @@ const Courts = ({
                 ))}
             </div>
 
-            {selectedCourt && (
-                <div className={styles.availabilitySection}>
-                    <h3>Available Time Slots for Court {selectedCourt}</h3>
-                    {loadingAvailability ? (
-                        <p>Loading availability...</p>
-                    ) : availability.length > 0 ? (
-                        <div className={styles.timeSlots}>
-                            {availability.map((slot, index) => (
-                                <div key={index} className={styles.timeSlot}>
-                                    {new Date(slot.start_time).toLocaleTimeString()} - {new Date(slot.end_time).toLocaleTimeString()}
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p>No available slots for the selected time range.</p>
-                    )}
-                </div>
-            )}
         </section>
     );
 };
 
-// SVG Component for Badminton Court (Horizontal with benches)
 const BadmintonCourtSVG = () => {
     return (
         <svg viewBox="0 0 240 120" className={styles.courtSvg}>
