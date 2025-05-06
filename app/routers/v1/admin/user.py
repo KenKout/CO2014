@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Body, Query
 from pydantic import BaseModel, Field, validator, EmailStr
 from typing import List, Optional
 import pymysql
@@ -159,7 +159,9 @@ async def create_user(
 # GET /users - List all users
 @admin_user_router.get("/", response_model=List[UserListDetailResponse])
 async def get_users(
-    db: pymysql.connections.Connection = Depends(get_db)
+    db: pymysql.connections.Connection = Depends(get_db),
+    page: int = Query(1, ge=1, description="Page number, starting from 1"),
+    limit: int = Query(25, ge=1, le=100, description="Number of items per page")
 ):
     """
     Admin route to retrieve a list of all users (Customers and Staff)
@@ -167,7 +169,7 @@ async def get_users(
     """
     logger.info("Admin request to fetch all users.")
     try:
-        users = get_all_users_admin(db=db)
+        users = get_all_users_admin(db=db, page=page, limit=limit)
         # The model function already processes the data into the desired structure
         # Pydantic will validate the structure against UserListDetailResponse
         return users

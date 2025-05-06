@@ -138,12 +138,15 @@ def create_user_admin(db: pymysql.connections.Connection, user_data, hashed_pass
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error during user creation")
 
 
-def get_all_users_admin(db: pymysql.connections.Connection):
+def get_all_users_admin(db: pymysql.connections.Connection, page: int = 1, limit: int = 25):
     """
     Admin function to fetch all users with their associated Customer or Staff details.
     """
     try:
         with db.cursor() as cursor:
+            # Calculate OFFSET
+            offset = (page - 1) * limit
+
             # Use LEFT JOIN to get details from Customer or Staff based on UserType
             # Select base User info and conditional Customer/Staff info
             sql = """
@@ -155,8 +158,9 @@ def get_all_users_admin(db: pymysql.connections.Connection):
             LEFT JOIN Customer c ON u.Username = c.Username AND u.UserType = 'Customer'
             LEFT JOIN Staff s ON u.Username = s.Username AND u.UserType = 'Staff'
             ORDER BY u.JoinDate DESC
+            LIMIT %s OFFSET %s
             """
-            cursor.execute(sql)
+            cursor.execute(sql, (limit, offset))
             users_raw = cursor.fetchall()
 
             # Process the raw data to structure it nicely
@@ -185,7 +189,7 @@ def get_all_users_admin(db: pymysql.connections.Connection):
                     }
                 users_processed.append(user_detail)
             
-            logger.info(f"Fetched {len(users_processed)} users for admin view.")
+            logger.info(f"Fetched {len(users_processed)} users for admin view (Page: {page}, Limit: {limit}).")
             return users_processed
 
     except pymysql.Error as db_err:
