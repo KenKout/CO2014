@@ -304,12 +304,11 @@ RETURNS INT
 DETERMINISTIC
 BEGIN
     DECLARE customerCount INT;
-    
+
     SELECT COUNT(*) INTO customerCount
-    FROM Customer c
-    JOIN User u ON c.Username = u.Username
-    WHERE u.UserType = 'Customer';
-    
+    FROM User
+    WHERE UserType = 'Customer';
+
     RETURN customerCount;
 END //
 
